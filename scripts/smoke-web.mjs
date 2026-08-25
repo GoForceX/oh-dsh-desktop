@@ -198,6 +198,16 @@ try {
 
   // The Oh-DSH web plugins enroll their browser entries in the client graph.
   const bootEntries = parseBootEntries(index)
+  const agentPresetClient = bootEntries.find(
+    entry => entry.id === '@deepseek-ai/dsh-client-ui-agent-preset',
+  )
+  assert.ok(agentPresetClient, 'DSH client graph is missing the Agent preset UI')
+  const agentPresetBundleResponse = await fetch(new URL(agentPresetClient.url, base))
+  const agentPresetBundle = await agentPresetBundleResponse.text()
+  assert.equal(agentPresetBundleResponse.status, 200)
+  assert.match(agentPresetBundle, /presetLiangshenName/)
+  assert.match(agentPresetBundle, /Liangshen mode/)
+
   const loaded = []
   for (const pluginId of [
     '@oh-dsh/web',

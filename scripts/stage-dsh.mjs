@@ -36,6 +36,10 @@ import {
   restoreLandlockLauncher,
 } from './landlock-launcher.mjs'
 import { resolveNodeDistributionPlatform } from '../src/node-platform.ts'
+import {
+  adaptDshLiangshenPresentation,
+  adaptTuiLiangshenPresentation,
+} from '../plugins/liangshen/src/upstream-adapter.mjs'
 import { adaptTuiRendererPackage } from './tui-upstream-adapter.mjs'
 import { restoreSettingsBoundary } from './settings-boundary.mjs'
 
@@ -1203,6 +1207,7 @@ function installDesktopPackages(surface = 'all') {
     }
     if (manifest.name === '@deepseek-harness-tui/dsh-tui') {
       adaptTuiRendererPackage(packageDir)
+      adaptTuiLiangshenPresentation(packageDir)
     }
     installedVersions[manifest.name] = manifest.version
   }
@@ -1401,6 +1406,7 @@ restoreExecutableHelpers()
 console.log('Normalizing runtime links')
 normalizeRuntimeLinks()
 restoreSettingsBoundary(runtime)
+if (stageSurface !== 'tui') adaptDshLiangshenPresentation(runtime)
 ensureLinuxLandlockLauncher()
 assertSelfContained(runtime, 'DSH runtime')
 ensureNodeRuntime()

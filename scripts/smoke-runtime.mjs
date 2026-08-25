@@ -157,6 +157,16 @@ try {
   assert.match(index, /<div id="root"><\/div>/)
 
   const bootEntries = parseBootEntries(index)
+  const agentPresetClient = bootEntries.find(
+    entry => entry.id === '@deepseek-ai/dsh-client-ui-agent-preset',
+  )
+  assert.ok(agentPresetClient, 'DSH client graph is missing the Agent preset UI')
+  const agentPresetBundleResponse = await fetch(new URL(agentPresetClient.url, base))
+  const agentPresetBundle = await agentPresetBundleResponse.text()
+  assert.equal(agentPresetBundleResponse.status, 200)
+  assert.match(agentPresetBundle, /presetLiangshenName/)
+  assert.match(agentPresetBundle, /Liangshen mode/)
+
   const loaded = []
   for (const pluginId of BUNDLED_DESKTOP_CLIENT_PLUGINS) {
     const row = bootEntries.find(entry => entry.id === pluginId)

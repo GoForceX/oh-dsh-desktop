@@ -218,6 +218,8 @@ let
         upstream/dsh-TUI-release/LICENSE \
         $out/lib/oh-dsh/tui-renderer/
       node -e "import('./scripts/tui-upstream-adapter.mjs').then(({ adaptTuiRendererPackage }) => adaptTuiRendererPackage('$out/lib/oh-dsh/tui-renderer'))"
+      node ${../plugins/liangshen/src/upstream-adapter.mjs} tui \
+        $out/lib/oh-dsh/tui-renderer
 
       # Collect runtime dependency closures that the DSH runtime may not ship.
       mkdir -p $out/lib/oh-dsh/extra-deps
@@ -280,6 +282,11 @@ pkgs.stdenv.mkDerivation {
     # anchors change.
     ${pkgs.nodejs_24}/bin/node ${../scripts/settings-boundary.mjs} \
       $out/dsh-runtime
+    ${lib.optionalString includesWeb ''
+      ${pkgs.nodejs_24}/bin/node \
+        ${../plugins/liangshen/src/upstream-adapter.mjs} \
+        dsh $out/dsh-runtime
+    ''}
 
     # Node runtime: reuse the same nodejs that built the bundle. The DSH
     # runtime's HMR service requires --expose-internals (upstream releases
