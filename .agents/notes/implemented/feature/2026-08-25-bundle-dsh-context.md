@@ -19,7 +19,10 @@ that already ships a complete DSH plugin build of its own.
   tag. Updates move the pointer deliberately — never npm latest at install
   time.
 - Build the plugin inside the submodule with the upstream's own tsdown
-  configuration (`make upstream`, stamp-guarded like dsh-TUI), and stage the
+  configuration (`scripts/ensure-upstream-context.mjs`, stamp-guarded like
+  dsh-TUI's compile). Both `make upstream` and `pnpm run build` invoke it, so
+  every staging path — the dist:* chains and the CI runtime job that never
+  run make — produces `upstream/dsh-context/lib` before staging. Stage the
   prebuilt `lib/` under the upstream npm name `dsh-context` from the upstream
   manifest — the dsh-TUI staging precedent, not a `plugins/` adapter. The
   host stays an unmodified plain Cordis plugin; the browser half is the

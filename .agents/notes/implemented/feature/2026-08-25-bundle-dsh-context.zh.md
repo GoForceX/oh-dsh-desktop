@@ -15,11 +15,14 @@ npm 插件。Oh-DSH 需要为一个自带完整 DSH 插件构建体系的外部�
 - 以 `upstream/dsh-context` 子模块固定在 release tag `v0.31.1`，与其他固定源一
   致；`.gitmodules` 跟踪 `main`，gitlink 固定 tag。升级通过移动指针、经评审后
   完成——绝不在安装时跟随 npm latest。
-- 在子模块内用上游自己的 tsdown 配置构建（`make upstream`，与 dsh-TUI 相同的
-  stamp 防陈旧守卫），并按 dsh-TUI 的暂存先例，用上游 manifest 把预构建的
-  `lib/` 以上游 npm 名 `dsh-context` 暂存——不做 `plugins/` 适配层。host 保持
-  未修改的普通 Cordis 插件；浏览器端就是上游自己的 `window.__ModuleLoader__`
-  bundle，面板与 `/context` 命令的行为与上游发布完全一致。
+- 在子模块内用上游自己的 tsdown 配置构建（`scripts/ensure-upstream-context.mjs`，
+  与 dsh-TUI 编译相同的 stamp 防陈旧守卫）。`make upstream` 与 `pnpm run build`
+  都会调用它，因此所有暂存路径——dist:* 链和从不执行 make 的 CI runtime
+  任务——都会在暂存前产出 `upstream/dsh-context/lib`。并按 dsh-TUI 的暂存先例，
+  用上游 manifest 把预构建的 `lib/` 以上游 npm 名 `dsh-context` 暂存——不做
+  `plugins/` 适配层。host 保持未修改的普通 Cordis 插件；浏览器端就是上游自己的
+  `window.__ModuleLoader__` bundle，面板与 `/context` 命令的行为与上游发布完全
+  一致。
 - 通过根目录和 `web/` 的 `cordis.patch.yml` insert 行挂载到 Desktop 与 Web；列入
   `BUNDLED_DESKTOP_CLIENT_PLUGINS`，让 runtime snapshot 与 smoke 套件断言客户端
   图注册。TUI 排除：插件围绕交互式面板构建，上游维护者不面向 TUI。
