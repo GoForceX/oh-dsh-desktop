@@ -28,7 +28,9 @@ npm 插件。Oh-DSH 需要为一个自带完整 DSH 插件构建体系的外部�
   图注册。TUI 排除：插件围绕交互式面板构建，上游维护者不面向 TUI。
 - host 的 import（`@deepseek-ai/dsh-session`、`dsh-settings`、
   `@deepseek-ai/schemastery`、`zod`）经由暂存运行时的 hoisted 树解析；不引入
-  适配 manifest 或依赖镜像。
+  适配 manifest 或依赖镜像。也正因如此，Windows 依赖 deploy 只对声明了运行时
+  `dependencies`/`optionalDependencies` 的 manifest 执行——只有 peer 的上游包不在
+  pnpm workspace 内，deploy 的 filter 永远匹配不到它。
 
 ## Alternatives considered
 

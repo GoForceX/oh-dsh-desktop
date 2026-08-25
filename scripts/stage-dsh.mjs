@@ -813,7 +813,15 @@ function alignBetterSidebarPtyDependency(packageDir) {
 
 function installWindowsPackageDependencies(sourceManifestPath, packageDir) {
   const manifest = JSON.parse(readFileSync(sourceManifestPath, 'utf8'))
-  if (dependencyNames(manifest).size === 0) return
+  // Peer dependencies resolve from the staged runtime's hoisted tree (the
+  // dsh-context host imports zod and the scoped cordis/schemastery that way);
+  // only runtime dependencies need a pnpm deploy closure, and the workspace
+  // filter can never match an upstream-pinned package outside the workspace.
+  const runtimeDependencies = [
+    ...Object.keys(manifest.dependencies ?? {}),
+    ...Object.keys(manifest.optionalDependencies ?? {}),
+  ]
+  if (runtimeDependencies.length === 0) return
   const deployment = join(
     stage,
     'windows-dependencies',

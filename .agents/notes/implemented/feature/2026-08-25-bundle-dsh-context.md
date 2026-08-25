@@ -36,6 +36,10 @@ that already ships a complete DSH plugin build of its own.
 - Host imports (`@deepseek-ai/dsh-session`, `dsh-settings`,
   `@deepseek-ai/schemastery`, `zod`) resolve through the staged runtime's
   hoisted tree; no adapter manifest or dependency mirroring is introduced.
+  Because of that, the Windows dependency deploy now runs only for manifests
+  with runtime `dependencies`/`optionalDependencies` — a peers-only upstream
+  package is outside the pnpm workspace, so the deploy filter could never
+  match it.
 
 ## Alternatives considered
 
