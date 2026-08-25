@@ -22,7 +22,7 @@ Status: implemented
 
 ## Consequences
 
-在装有 QQ 的设备上，普通点击一跳直达群卡片；在其他环境仍会落在一个可用的加群页。scheme 内嵌的群号（554359007）是从俱乐部分享链接解码得到的，href 与 scheme 只有在单独修改其中之一时才会漂移；Discord 邀请链接是俱乐部自己发布的 URL，可能独立轮换。两个标志均内联渲染，没有新增图片资源，链接文案走站点既有的翻译表。
+在装有 QQ 的设备上，普通点击一跳直达群卡片；在其他环境仍会落在一个可用的加群页。scheme 内嵌的群号（554359007）是从俱乐部分享链接解码得到的，href 与 scheme 只有在单独修改其中之一时才会漂移；Discord 邀请链接是俱乐部自己发布的 URL，可能独立轮换。两个标志均为 simple-icons 的 QQ 与 Discord 图形（CC0 路径数据）——与俱乐部 GitHub 徽章经 shields.io `logo=qq` / `logo=discord` 使用的是同一套标志——以内联 SVG 呈现，没有新增图片资源。链接文案走站点既有的翻译表。
 
 ## Testing
 

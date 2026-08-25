@@ -37,8 +37,10 @@ and still lands on a working join page everywhere else. The scheme embeds the
 group number (554359007) decoded from the club's share link, so the href and
 the scheme drift apart only if someone edits one without the other; the
 Discord invite is the club's own published URL and may rotate independently.
-Both marks render inline with no new image assets, and the link labels ride
-the site's existing translation table.
+Both marks are the simple-icons QQ and Discord renderings (CC0 path data) —
+the same logos the club's own GitHub badges use via shields.io's
+`logo=qq` / `logo=discord` — inlined as SVG so no new image assets ship. The
+link labels ride the site's existing translation table.
 
 ## Testing
 
