@@ -72,9 +72,16 @@ interactive dashboard; the upstream explicitly does not target TUI.
 - Desktop and Web users get the Context panel and `/context` out of the box;
   the panel coexists with the composer context ring (same facts, independent
   tab).
-- The `make upstream` target now runs `pnpm --dir upstream/dsh-context
-  install --frozen-lockfile --ignore-scripts && run build`; CI and local
-  builds need that install to succeed.
+- `scripts/ensure-upstream-context.mjs` performs the build: it runs the
+  submodule's install and build through the manifest-pinned pnpm
+  (`pnpm dlx pnpm@<packageManager pin>`, currently 11.9.0) with
+  `--ignore-workspace`, because ambient pnpm ≥ 11.20 abort on the pin — the
+  scoped `@pnpm/exe` packages never published 11.9-line releases, so their
+  engine-identity delegation cannot be verified. The completion stamp lives
+  under `.cache/` (staging wipes `.stage/`, which would force a rebuild every
+  cycle); reproduce manually with
+  `pnpm --dir upstream/dsh-context dlx 'pnpm@11.9.0' run build` after the
+  matching install.
 - `tests/plugin-collection.test.ts` resolves `dsh-context` from the submodule
   manifest; every future built-in plugin staged from an upstream manifest
   extends that mapping.

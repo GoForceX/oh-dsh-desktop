@@ -57,8 +57,13 @@ TUI。
 
 - Desktop 与 Web 用户开箱即得 Context 面板与 `/context`；面板与 composer 的
   context ring 并存（同样的事实，独立 tab）。
-- `make upstream` 现在会执行 `pnpm --dir upstream/dsh-context install
-  --frozen-lockfile --ignore-scripts && run build`；CI 与本地构建依赖该安装成功。
+- 构建由 `scripts/ensure-upstream-context.mjs` 完成：它通过 manifest 钉定的
+  pnpm（`pnpm dlx pnpm@<packageManager 钉定版本>`，当前 11.9.0）并以
+  `--ignore-workspace` 执行子模块的 install 与 build，因为 ≥ 11.20 的环境 pnpm
+  会在该钉定上中止——scoped `@pnpm/exe` 包从未发布 11.9 系列版本，其引擎身份
+  委派无法验证。完成 stamp 存于 `.cache/`（staging 会清空 `.stage/`，否则每个
+  周期都会强制重建）；手动复现：在对应 install 之后执行
+  `pnpm --dir upstream/dsh-context dlx 'pnpm@11.9.0' run build`。
 - `tests/plugin-collection.test.ts` 从子模块 manifest 解析 `dsh-context`；今后
   每个由上游 manifest 暂存的内置插件都要扩展该映射。
 - 固定的 DSH 运行时必须继续提供插件的 host import（zod、scoped

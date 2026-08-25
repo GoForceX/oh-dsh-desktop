@@ -11,7 +11,9 @@ import { fileURLToPath } from 'node:url'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const contextDir = join(root, 'upstream', 'dsh-context')
 const libEntry = join(contextDir, 'lib', 'index.js')
-const stamp = join(root, '.stage', 'dsh-context-compile.stamp')
+// Keep the stamp out of .stage: staging wipes that tree on every run, which
+// would reinstall and rebuild the submodule each launch and dist cycle.
+const stamp = join(root, '.cache', 'dsh-context-compile.stamp')
 
 function currentRevision() {
   const result = spawnSync('git', ['-C', contextDir, 'rev-parse', 'HEAD'], { encoding: 'utf8' })
