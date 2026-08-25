@@ -10,7 +10,7 @@ Status: implemented
 
 ## Decision
 
-页脚在标语旁链接俱乐部的两个社区。Discord 指向俱乐部公布的邀请链接（`https://discord.gg/EMJqcQCCpW`）。QQ 链接以俱乐部分享页（`https://qm.qq.com/q/2uEd11lkWk`）作为 `href`，普通左键点击会先导航到
+页脚以 `1fr auto 1fr` 网格将两个社区链接居中放在品牌名与右对齐的标语之间（窄视口下堆叠居中），两个标志均以品牌色呈现：Discord 标志使用其品牌蓝紫（`#5865F2`）。Discord 指向俱乐部公布的邀请链接（`https://discord.gg/EMJqcQCCpW`）。QQ 链接以俱乐部分享页（`https://qm.qq.com/q/2uEd11lkWk`）作为 `href`，普通左键点击会先导航到
 `mqqapi://card/show_pslcard?src_type=internal&version=1&uin=554359007&card_type=group&source=qrcode`，
 在已安装的 QQ 客户端中直接打开群卡片；两秒内没有任何客户端认领该 scheme 时，改为打开分享页。带修饰键的点击和非左键点击会跳过该处理，保持原生分享页导航。
 

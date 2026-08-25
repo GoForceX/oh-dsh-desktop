@@ -12,7 +12,10 @@ opens an intermediate join page rather than the group itself.
 
 ## Decision
 
-The footer links both club communities next to the tagline. Discord points at
+The footer centers both club links between the brand and the right-aligned
+tagline (a `1fr auto 1fr` grid that stacks centered on narrow viewports),
+and both marks render in brand colors: the Discord mark in its blurple
+(`#5865F2`). Discord points at
 the invite the club publishes (`https://discord.gg/EMJqcQCCpW`). The QQ link
 keeps the club's share page (`https://qm.qq.com/q/2uEd11lkWk`) as its `href`,
 and a plain left click first navigates to
