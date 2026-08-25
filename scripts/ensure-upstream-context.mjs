@@ -42,7 +42,10 @@ try {
 // Never process.exit() here: scripts/build.mjs imports this module, and an
 // early exit would kill the whole root build and leave dist/ stale.
 if (stamped !== revision || !existsSync(libEntry)) {
-  run('pnpm', ['install', '--frozen-lockfile', '--ignore-scripts'])
+  // --ignore-workspace keeps this an isolated install of the submodule's own
+  // pinned lockfile; without it pnpm may resolve the parent workspace
+  // instead and skip the submodule's toolchain entirely.
+  run('pnpm', ['install', '--frozen-lockfile', '--ignore-scripts', '--ignore-workspace'])
   run('pnpm', ['run', 'build'])
   mkdirSync(dirname(stamp), { recursive: true })
   writeFileSync(stamp, `${revision}\n`)
