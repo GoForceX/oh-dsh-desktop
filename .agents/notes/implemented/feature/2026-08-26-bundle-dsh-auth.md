@@ -40,7 +40,11 @@ patch row. Desktop and Web users had no path to subscription accounts.
   `auth/` dir (npm release layout), and the extra-deps copy loop now merges
   scoped entries package by package instead of skipping a scope directory
   the renderer already created. The full `oh-dsh` package builds clean with
-  both `@deepseek-harness-tui/dsh-auth` and `dsh-context` registered.
+  both `@deepseek-harness-tui/dsh-auth` and `dsh-context` registered. Scoped
+  extra-deps copies also receive the same `node_modules -> ../..`
+  dependency-root link collect-deps.py creates (only when absent), so the
+  renderer's private link to the auth copy resolves peer imports through the
+  runtime graph.
 
 ## Alternatives considered
 

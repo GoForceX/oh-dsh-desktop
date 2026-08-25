@@ -33,7 +33,9 @@ renderer 自己的 `oauth` patch 行。Desktop 与 Web 用户没有订阅账号�
 - Nix 为 full 与 web 面从 bundle 的 `auth/` 目录（npm 发布布局）注册该包，
   extra-deps 拷贝循环改为逐包合并 scope 条目，而不是跳过 renderer 已创建的
   scope 目录。完整 `oh-dsh` 包构建通过，`@deepseek-harness-tui/dsh-auth` 与
-  `dsh-context` 均注册成功。
+  `dsh-context` 均注册成功。scope 条目的 extra-deps 拷贝还会在缺失时获得与
+  collect-deps.py 相同的 `node_modules -> ../..` 依赖根链接，使 renderer 指向
+  auth 副本的私有链接能经运行时图解析 peer import。
 
 ## Alternatives considered
 

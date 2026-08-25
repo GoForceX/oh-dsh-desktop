@@ -312,6 +312,12 @@ pkgs.stdenv.mkDerivation {
               if [ ! -d "$out/dsh-runtime/node_modules/$subname" ]; then
                 cp -r "$sub" "$out/dsh-runtime/node_modules/$subname"
                 chmod -R u+w "$out/dsh-runtime/node_modules/$subname"
+                # Same dependency-root link collect-deps.py gives collected
+                # packages: without it the renderer's private link resolves
+                # to the store real path and peer imports cannot be found.
+                if [ ! -e "$out/dsh-runtime/node_modules/$subname/node_modules" ]; then
+                  ln -s ../.. "$out/dsh-runtime/node_modules/$subname/node_modules"
+                fi
               fi
             done
             ;;
