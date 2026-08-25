@@ -41,3 +41,11 @@ test('surface staging keeps Desktop isolated and ships Liangshen as a Web/Deskto
   assert.match(script, /alignBetterSidebarPtyDependency/)
   assert.match(script, /runtimePackageDirectory\('node-pty'\)/)
 })
+
+test('root deploy workspace owns nested TUI link packages', () => {
+  const workspace = readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8')
+  const lockfile = readFileSync(join(root, 'pnpm-lock.yaml'), 'utf8')
+
+  assert.match(workspace, /^  - upstream\/dsh-TUI\/dsh-auth$/m)
+  assert.match(lockfile, /^  upstream\/dsh-TUI\/dsh-auth:$/m)
+})
