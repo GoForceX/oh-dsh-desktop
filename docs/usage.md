@@ -427,6 +427,18 @@ around interactive panels, and the upstream maintainer does not target TUI.
 Oh-DSH upgrades the pin deliberately through the submodule revision with each
 release; it does not follow npm latest automatically.
 
+## Subscription OAuth sign-in
+
+Desktop and Web bundle the upstream
+[dsh-auth](https://github.com/ccch1mneyyy/dsh-auth) host plugin (pinned
+inside the dsh-TUI submodule; the TUI loads the same package through its
+renderer). It registers subscription-account LLM routes — ChatGPT/Codex,
+Claude Pro/Max, and SuperGrok — and contributes the `/auth` command for
+sign-in, status, and sign-out. The interactive login flow runs through the
+same question UI each surface already uses; when no interactive surface is
+present, the command refuses with guidance instead of assuming a browser.
+Credentials stay in the existing Oh-DSH data directory.
+
 ## Desktop operations
 
 ### Conversation input history

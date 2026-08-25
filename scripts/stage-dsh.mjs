@@ -1026,6 +1026,7 @@ const SURFACE_PACKAGE_NAMES = Object.freeze({
     '@oh-dsh/pinned-summary',
     '@oh-dsh/plugin-marketplace',
     'dsh-context',
+    '@deepseek-harness-tui/dsh-auth',
   ]),
   web: new Set([
     '@oh-dsh/web',
@@ -1038,6 +1039,7 @@ const SURFACE_PACKAGE_NAMES = Object.freeze({
     '@oh-dsh/panel-controls',
     '@oh-dsh/plugin-marketplace',
     'dsh-context',
+    '@deepseek-harness-tui/dsh-auth',
   ]),
   tui: new Set([
     '@deepseek-harness-tui/dsh-tui',
@@ -1111,6 +1113,18 @@ function installDesktopPackages(surface = 'all') {
         [join(root, 'dist', 'web', 'client.js'), 'dist/client.js'],
         [join(root, 'dist', 'web', 'client.js.map'), 'dist/client.js.map'],
         [join(root, 'dist', 'web', 'cordis.patch.yml'), 'dist/cordis.patch.yml'],
+      ],
+    },
+    {
+      // The upstream subscription OAuth package is host-only (llm routes +
+      // /auth command over the user-questions seam); Desktop and Web mount
+      // it directly, the TUI loads it through the renderer's oauth row.
+      manifest: join(root, 'upstream', 'dsh-TUI', 'dsh-auth', 'package.json'),
+      files: [
+        [join(root, 'upstream', 'dsh-TUI', 'dsh-auth', 'lib'), 'lib'],
+        [join(root, 'upstream', 'dsh-TUI', 'dsh-auth', 'dsh-plugin.json'), 'dsh-plugin.json'],
+        [join(root, 'upstream', 'dsh-TUI', 'dsh-auth', 'cordis.patch.yml'), 'cordis.patch.yml'],
+        [join(root, 'upstream', 'dsh-TUI', 'dsh-auth', 'LICENSE'), 'LICENSE'],
       ],
     },
     {

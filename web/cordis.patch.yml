@@ -47,3 +47,11 @@
     # upstream/dsh-context), shared with the desktop distribution.
     - id: dsh-context
       name: 'dsh-context'
+
+    # Subscription OAuth sign-in (upstream dsh-auth, pinned inside
+    # upstream/dsh-TUI): llm provider routes for ChatGPT/Codex, Claude
+    # Pro/Max and SuperGrok plus the /auth command; login interaction runs
+    # over the user-questions seam. TUI loads it via the renderer instead.
+    - id: dsh-auth
+      name: '@deepseek-harness-tui/dsh-auth'
+      inject: [llm, commands]

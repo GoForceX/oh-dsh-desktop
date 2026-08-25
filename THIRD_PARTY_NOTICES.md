@@ -103,7 +103,8 @@ and keep the license with the packaged plugin.
 - Pinned protocol revision: `614dfa1ac168db79fcf4577cf0ebb34e2e3b944b`
 - Bundled OAuth package: <https://github.com/ccch1mneyyy/dsh-auth>
   (`@deepseek-harness-tui/dsh-auth@0.1.0`, pinned revision
-  `fba02bcf7fb57e3d9885f73882d5835ccdf526c4`, MIT)
+  `fba02bcf7fb57e3d9885f73882d5835ccdf526c4`, MIT) — also mounted directly
+  as the built-in Desktop and Web host plugin behind the `/auth` command
 - Declared license: MIT
 - Oh-DSH component: `@oh-dsh/tui`
 

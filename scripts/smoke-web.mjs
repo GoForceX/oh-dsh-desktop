@@ -127,6 +127,8 @@ for (const row of [
   'oh-sidebar',
   'oh-panel-controls',
   'oh-plugin-marketplace',
+  'dsh-context',
+  'dsh-auth',
 ]) {
   assert.match(dump.stdout, new RegExp(`\\b${row}\\b`), `composed web profile is missing row ${row}`)
 }
@@ -249,6 +251,15 @@ try {
     'dist',
     'index.js',
   )), '@oh-dsh/vision Host bundle is missing')
+  assert.ok(existsSync(join(
+    resources,
+    'dsh-runtime',
+    'node_modules',
+    '@deepseek-harness-tui',
+    'dsh-auth',
+    'lib',
+    'index.js',
+  )), '@deepseek-harness-tui/dsh-auth Host bundle is missing')
 
   // Only the Electron shell must stay out of the web client graph.
   assert.equal(
