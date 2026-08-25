@@ -22,6 +22,9 @@ Oh-DSH 在保持单一 DSH runtime 和统一产品身份的同时，适配 Bette
   TypeScript 源码。
 - Nix 构建保留固定的源码图用于依赖解析，但使用相同版本的已发布 TUI
   产物及其内置 dsh-std package，保证离线构建且不发生第二次依赖安装。
+  dsh-context 的内置随后扩展了同一模式——固定 release、在 Nix 中消费已发布
+  产物——但有意不做任何适配；该"无适配"策略与其构建机制由
+  [dsh-context 内置](../feature/2026-08-25-bundle-dsh-context.md)决策拥有。
 - 固定版本的 DSH 按其 pnpm lock 与 release-age 策略构建，并在最终组装时
   统一 pinned source 与 llm-agents 两种 Nix 输出根目录。
 - 双语源码发现不扫描固定的 upstream 与生成的 release 目录；其中的文档

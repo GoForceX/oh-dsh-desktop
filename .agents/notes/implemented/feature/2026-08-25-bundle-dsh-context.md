@@ -16,7 +16,10 @@ that already ships a complete DSH plugin build of its own.
 
 - Pin the upstream as `upstream/dsh-context` at release tag `v0.31.1`, like
   the other pinned sources; `.gitmodules` tracks `main`, the gitlink pins the
-  tag. Updates move the pointer deliberately — never npm latest at install
+  tag. The pin-and-consume-published-artifacts shape extends the
+  [upstream surface extension seams](../../architecture/2026-08-18-upstream-surface-extension-seams.md)
+  decision; unlike Better Sidebar and dsh-TUI, nothing is adapted or
+  transformed. Updates move the pointer deliberately — never npm latest at install
   time.
 - Build the plugin inside the submodule with the upstream's own tsdown
   configuration (`scripts/ensure-upstream-context.mjs`, stamp-guarded like

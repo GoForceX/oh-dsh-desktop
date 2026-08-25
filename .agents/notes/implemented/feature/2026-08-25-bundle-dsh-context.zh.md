@@ -13,8 +13,10 @@ npm 插件。Oh-DSH 需要为一个自带完整 DSH 插件构建体系的外部�
 ## Decision
 
 - 以 `upstream/dsh-context` 子模块固定在 release tag `v0.31.1`，与其他固定源一
-  致；`.gitmodules` 跟踪 `main`，gitlink 固定 tag。升级通过移动指针、经评审后
-  完成——绝不在安装时跟随 npm latest。
+  致；`.gitmodules` 跟踪 `main`，gitlink 固定 tag。"固定并消费已发布产物"的形态
+  扩展自[上游扩展接缝](../../architecture/2026-08-18-upstream-surface-extension-seams.md)
+  决策；与 Better Sidebar 和 dsh-TUI 不同，本插件不做任何适配或转换。升级通过
+  移动指针、经评审后完成——绝不在安装时跟随 npm latest。
 - 在子模块内用上游自己的 tsdown 配置构建（`scripts/ensure-upstream-context.mjs`，
   与 dsh-TUI 编译相同的 stamp 防陈旧守卫）。`make upstream` 与 `pnpm run build`
   都会调用它，因此所有暂存路径——dist:* 链和从不执行 make 的 CI runtime

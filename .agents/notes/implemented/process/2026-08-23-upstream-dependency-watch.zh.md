@@ -7,7 +7,8 @@ Status: implemented
 ## Problem
 
 Oh-DSH 通过 `dsh-source.json`（当前为 `@deepseek-ai/dsh@0.1.1-rc.2`）
-pin 住 DSH 运行时，并通过 `upstream/` 子模块 pin 住两个插件上游。目前
+pin 住 DSH 运行时，并通过 `upstream/` 子模块 pin 住插件上游（2026-08-25
+内置 dsh-context 后为三个）。目前
 没有任何机制播报上游的新版本：每次升级——例如 0.1.1-rc.2 那次——都靠人工
 发现，往往滞后于发布数日，而历次 DSH 升级都需要在 `plugins/` 中做契约
 适配，越早动手越有利。

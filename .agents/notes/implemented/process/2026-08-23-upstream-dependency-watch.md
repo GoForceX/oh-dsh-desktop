@@ -7,8 +7,9 @@ English | [中文](2026-08-23-upstream-dependency-watch.zh.md)
 ## Problem
 
 Oh-DSH pins the DSH runtime through `dsh-source.json` (currently
-`@deepseek-ai/dsh@0.1.1-rc.2`) and pins two plugin sources through the
-`upstream/` submodules. Nothing announces new upstream releases: each
+`@deepseek-ai/dsh@0.1.1-rc.2`) and pins plugin sources through the
+`upstream/` submodules (three since the dsh-context bundling on
+2026-08-25). Nothing announces new upstream releases: each
 upgrade — like the 0.1.1-rc.2 bump — is discovered by hand, often days
 after publication, and every DSH bump so far required contract
 adaptation in `plugins/` that benefits from starting early.
