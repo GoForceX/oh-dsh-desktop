@@ -12,7 +12,10 @@ opens an intermediate join page rather than the group itself.
 
 ## Decision
 
-The footer links both club communities next to the tagline. Discord points at
+The footer centers both club links between the brand and the right-aligned
+tagline (a `1fr auto 1fr` grid that stacks centered on narrow viewports),
+and both marks render in brand colors: the Discord mark in its blurple
+(`#5865F2`). Discord points at
 the invite the club publishes (`https://discord.gg/EMJqcQCCpW`). The QQ link
 keeps the club's share page (`https://qm.qq.com/q/2uEd11lkWk`) as its `href`,
 and a plain left click first navigates to
@@ -37,8 +40,13 @@ and still lands on a working join page everywhere else. The scheme embeds the
 group number (554359007) decoded from the club's share link, so the href and
 the scheme drift apart only if someone edits one without the other; the
 Discord invite is the club's own published URL and may rotate independently.
-Both marks render inline with no new image assets, and the link labels ride
-the site's existing translation table.
+The Discord mark is the simple-icons rendering (CC0 path data), the same logo
+the club's own GitHub badge uses via shields.io's `logo=discord`. The QQ mark
+carries the penguin geometry served by Tencent's qun.qq.com join page itself,
+recolored to the QQ brand blue (`#12B7F5`) so it reads as the standing
+mascot at footer size; it is Tencent's trademark, used nominatively to link
+the club's group. Both are inlined as SVG so no new image assets ship, and
+the link labels ride the site's existing translation table.
 
 ## Testing
 

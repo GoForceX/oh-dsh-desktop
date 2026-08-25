@@ -501,19 +501,24 @@ html:lang(zh-CN) .hero-title-surfaces {
 }
 
 .site-footer {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     gap: 12px;
     align-items: center;
-    justify-content: space-between;
     min-height: 72px;
     color: var(--quiet);
     font-size: 12px;
     border-top: 1px solid rgba(151, 196, 255, 0.09);
 }
 
+.site-footer > .footer-tagline {
+    justify-self: end;
+    text-align: right;
+}
+
 .footer-community {
     display: flex;
-    gap: 18px;
+    gap: 22px;
     align-items: center;
 }
 
@@ -532,7 +537,7 @@ html:lang(zh-CN) .hero-title-surfaces {
 }
 
 .community-link svg {
-    height: 16px;
+    height: 18px;
     width: auto;
     fill: currentColor;
 }
@@ -736,10 +741,14 @@ html:lang(zh-CN) .hero-title-surfaces {
     }
 
     .site-footer {
-        align-items: flex-start;
-        flex-direction: column;
-        justify-content: center;
+        grid-template-columns: 1fr;
+        justify-items: center;
         padding: 18px 0;
+        text-align: center;
+    }
+
+    .site-footer > .footer-tagline {
+        justify-self: center;
     }
 }
 
