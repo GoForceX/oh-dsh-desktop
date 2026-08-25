@@ -74,18 +74,28 @@ let
   tuiSrc = pkgs.fetchFromGitHub {
     owner = "ccch1mneyyy";
     repo = "dsh-TUI";
-    rev = "aca03b83850d4dc52728d068b2b1b05078ecb90b";
-    hash = "sha256-wMmIu6m5c1+DW5Fl0AK/25Z6wiNVBdOAWXg9GXR3zBU=";
+    rev = "b166c2ecc03ab61ec5aee16fe69cdeaf0e2a03a9";
+    hash = "sha256-2akItjIHdFH7cOQa1zgoK8rn0RulUnztpCd3IELFK1Q=";
+  };
+  dshAuthSrc = pkgs.fetchFromGitHub {
+    owner = "ccch1mneyyy";
+    repo = "dsh-auth";
+    rev = "fba02bcf7fb57e3d9885f73882d5835ccdf526c4";
+    hash = "sha256-9cJxkcWeWoFf2chJRDZWnKQvcWj5Ur0JzCt8spyw/t8=";
   };
   tuiRelease = pkgs.fetchurl {
-    url = "https://registry.npmjs.org/@deepseek-harness-tui/dsh-tui/-/dsh-tui-0.9.0.tgz";
-    hash = "sha512-Z+q2qfPCAoXOfQqpdazMssRl0WxJQ4C3OZITETvZBXzUG63EmPqPhTGsStM0U8AgoKymxgNX0Zkfu6XH37AebQ==";
+    url = "https://registry.npmjs.org/@deepseek-harness-tui/dsh-tui/-/dsh-tui-0.9.2.tgz";
+    hash = "sha512-LsjNnQ790sAGNllrNt3L8B1rdePcwRvwqSlQJ97uTh5skPaUkV9W41oqEYw1g19DZ6CEQ/8T3kKsI9pmQ8AynQ==";
+  };
+  dshAuthRelease = pkgs.fetchurl {
+    url = "https://registry.npmjs.org/@deepseek-harness-tui/dsh-auth/-/dsh-auth-0.1.0.tgz";
+    hash = "sha512-vggwtl0+fuZ9Xuwq9NC5MznT3ZpBfnqGTBgPUfEaqoTPXrxI0S+jcNcO3ou9Akn23cUAZikgmS7zHMVr+ZlXbw==";
   };
   tuiEcosystemSpecSrc = pkgs.fetchFromGitHub {
     owner = "T-Auto";
     repo = "dsh-ecosystem-spec";
-    rev = "e1b902b0f95f4280a8e68d414ec7a4d25d6ce106";
-    hash = "sha256-LVc7bMUJMI4GYW3IyBWYwFzkibayu6BgZxlO67FPtGk=";
+    rev = "2d0236f7d4579814d9d177a58d03ebd168025960";
+    hash = "sha256-0V5i5OfUGAwZDmnzWBmZoBpDm1SnYMqWdV6aGuJ67Ps=";
   };
   tuiStdSrc = pkgs.fetchFromGitHub {
     owner = "Yan-Zero";
@@ -102,6 +112,11 @@ let
     rm -rf $out/upstream/DSH-better-sidebar $out/upstream/dsh-TUI $out/upstream/dsh-context
     cp -r ${betterSidebarSrc} $out/upstream/DSH-better-sidebar
     cp -r ${tuiSrc} $out/upstream/dsh-TUI
+    # The renderer's bundled OAuth package arrives as a gitlink inside
+    # tuiSrc; place its source so the pnpm resolution of link:./dsh-auth
+    # finds the same tree the submodule build compiles.
+    rm -rf $out/upstream/dsh-TUI/dsh-auth
+    cp -r ${dshAuthSrc} $out/upstream/dsh-TUI/dsh-auth
     chmod -R u+w $out/upstream/dsh-TUI
     rm -rf $out/upstream/dsh-TUI/dsh-ecosystem-spec \
       $out/upstream/dsh-TUI/vendor/dsh-std
@@ -112,6 +127,9 @@ let
     mkdir -p $out/upstream/dsh-TUI-release
     tar -xzf ${tuiRelease} --strip-components=1 \
       -C $out/upstream/dsh-TUI-release
+    mkdir -p $out/upstream/dsh-auth-release
+    tar -xzf ${dshAuthRelease} --strip-components=1 \
+      -C $out/upstream/dsh-auth-release
     # The context insight plugin ships prebuilt from npm (same release layout
     # the npm-pinned TUI renderer uses); scripts/build.mjs then sees a lib/
     # already matching the pinned version and skips the sandboxed rebuild.
@@ -208,6 +226,10 @@ let
       rm -rf $out/lib/oh-dsh/extra-deps/@dsh-std
       cp -r upstream/dsh-TUI-release/node_modules/@dsh-std \
         $out/lib/oh-dsh/extra-deps/@dsh-std
+      # The published renderer depends on the released dsh-auth OAuth package.
+      mkdir -p $out/lib/oh-dsh/extra-deps/@deepseek-harness-tui
+      cp -r upstream/dsh-auth-release \
+        $out/lib/oh-dsh/extra-deps/@deepseek-harness-tui/dsh-auth
       for dep in $out/lib/oh-dsh/extra-deps/@dsh-std/*; do
         ln -s ../.. "$dep/node_modules"
       done
