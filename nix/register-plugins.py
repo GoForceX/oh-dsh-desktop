@@ -77,6 +77,7 @@ def main():
                 else:
                     shutil.copy2(src, dst)
             os.symlink(node_modules, deps_link)
+            installed_versions[name] = manifest["version"]
             continue
         if plugin_key == "tui-renderer":
             # The renderer requires React 19 while the Web runtime carries
