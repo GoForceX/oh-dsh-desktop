@@ -34,8 +34,10 @@ subscription LLM route, `/reload` and `/restart`, and fixes a pnpm ≥ 11
 - The guarded renderer adapter learns the new `/restart` command's
   description rewrite; every other 0.9.2 addition needed no adaptation.
 - The upstream fullscreen-default flip (now on by default upstream) is NOT
-  adopted: the Oh-DSH launcher keeps inline as the default and always passes
-  `DSH_OH_TUI_FULLSCREEN` explicitly.
+  adopted: the Oh-DSH launcher keeps inline as the default and always sets
+  `OH_DSH_TUI_FULLSCREEN` (the variable the Cordis patch and renderer
+  adapter read; `DSH_OH_TUI_FULLSCREEN` is only the launcher's input alias)
+  explicitly.
 
 ## Alternatives considered
 

@@ -29,7 +29,8 @@ Status: implemented
 - 带守卫的 renderer 适配器学习新 `/restart` 命令描述的重写；0.9.2 的其他
   新增均无需适配。
 - 不采纳上游的 fullscreen 默认翻转（上游默认改为开启）：Oh-DSH 启动器保持
-  inline 为默认，并始终显式传递 `DSH_OH_TUI_FULLSCREEN`。
+  inline 为默认，并始终显式设置 `OH_DSH_TUI_FULLSCREEN`（Cordis patch 与
+  renderer 适配器读取的变量；`DSH_OH_TUI_FULLSCREEN` 只是启动器的输入别名）。
 
 ## Alternatives considered
 
