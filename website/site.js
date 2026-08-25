@@ -6,6 +6,9 @@ const releasesApiUrl =
     "https://api.github.com/repos/hust-open-atom-club/oh-dsh/releases?per_page=100";
 const downloadsCacheKey = "oh-dsh-site-downloads";
 const downloadsCacheTtl = 30 * 60 * 1000;
+const qqGroupShareUrl = "https://qm.qq.com/q/2uEd11lkWk";
+const qqGroupSchemeUrl =
+    "mqqapi://card/show_pslcard?src_type=internal&version=1&uin=554359007&card_type=group&source=qrcode";
 
 const translations = {
     "zh-CN": {
@@ -35,6 +38,7 @@ const translations = {
         directDownload: "直接下载",
         unknownPlatform: "其他平台",
         footer: "开放、可组合的 DeepSeek Harness 工作台",
+        qqGroup: "QQ 群",
         screenshotAlt: "Oh-DSH Desktop 深色界面，包含工作区、对话和插件入口",
         pageDescription:
             "Oh-DSH 以一套 DSH runtime 提供 Desktop、Web UI 与 TUI 三种开发体验。",
@@ -66,6 +70,7 @@ const translations = {
         directDownload: "Download directly",
         unknownPlatform: "Other platform",
         footer: "An open, composable DeepSeek Harness workbench",
+        qqGroup: "QQ Group",
         screenshotAlt:
             "Oh-DSH Desktop dark interface with workspace, conversation, and plugin navigation",
         pageDescription:
@@ -87,6 +92,7 @@ const elements = {
     languageToggle: document.querySelector("[data-language-toggle]"),
     platformLabel: document.querySelector("[data-platform-label]"),
     particles: document.querySelector("[data-harness-particles]"),
+    qqGroupLink: document.querySelector("[data-qq-group-link]"),
     starCount: document.querySelector("[data-star-count]"),
     starDownload: document.querySelector("[data-star-download]"),
 };
@@ -418,6 +424,40 @@ elements.dialog.addEventListener("click", (event) => {
 
 if (elements.installCopy && elements.installCommand) {
     elements.installCopy.addEventListener("click", copyInstallCommand);
+}
+
+function openQqGroup(event) {
+    // Modified and non-left clicks keep the native share-page navigation.
+    if (
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+    ) {
+        return;
+    }
+    event.preventDefault();
+
+    // Aim the click at an installed QQ client first; when no client claims
+    // the private scheme, the share page still offers a manual join.
+    const fallback = window.setTimeout(() => {
+        window.location.href = qqGroupShareUrl;
+    }, 2000);
+    const claimed = () => window.clearTimeout(fallback);
+    window.addEventListener("blur", claimed, { once: true });
+    document.addEventListener(
+        "visibilitychange",
+        () => {
+            if (document.hidden) claimed();
+        },
+        { once: true },
+    );
+    window.location.href = qqGroupSchemeUrl;
+}
+
+if (elements.qqGroupLink) {
+    elements.qqGroupLink.addEventListener("click", openQqGroup);
 }
 
 elements.starDownload.addEventListener("click", () => {
