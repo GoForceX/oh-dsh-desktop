@@ -1,0 +1,70 @@
+# Agent Note: Bundle dsh-context as the built-in context insight plugin
+
+Status: implemented
+
+English | [中文](2026-08-25-bundle-dsh-context.zh.md)
+
+## Problem
+
+Issue #136 asked for unified context capacity/remaining statistics across the
+surfaces. The DSH composer's context ring is the only built-in signal; richer
+insight required each user to find and install the third-party `dsh-context`
+npm plugin themselves. Oh-DSH needed a bundling policy for an external plugin
+that already ships a complete DSH plugin build of its own.
+
+## Decision
+
+- Pin the upstream as `upstream/dsh-context` at release tag `v0.31.1`, like
+  the other pinned sources; `.gitmodules` tracks `main`, the gitlink pins the
+  tag. Updates move the pointer deliberately — never npm latest at install
+  time.
+- Build the plugin inside the submodule with the upstream's own tsdown
+  configuration (`make upstream`, stamp-guarded like dsh-TUI), and stage the
+  prebuilt `lib/` under the upstream npm name `dsh-context` from the upstream
+  manifest — the dsh-TUI staging precedent, not a `plugins/` adapter. The
+  host stays an unmodified plain Cordis plugin; the browser half is the
+  upstream's own `window.__ModuleLoader__` bundle, so the panel and the
+  `/context` command behave exactly as published.
+- Mount on Desktop and Web via insert rows in the root and `web/`
+  `cordis.patch.yml`; list in `BUNDLED_DESKTOP_CLIENT_PLUGINS` so the runtime
+  snapshot and the smoke suites assert the client graph enrollment. TUI is
+  excluded: the plugin is built around interactive panels and the upstream
+  maintainer does not target TUI.
+- Host imports (`@deepseek-ai/dsh-session`, `dsh-settings`,
+  `@deepseek-ai/schemastery`, `zod`) resolve through the staged runtime's
+  hoisted tree; no adapter manifest or dependency mirroring is introduced.
+
+## Alternatives considered
+
+**Follow npm latest, as the upstream author suggested.** Rejected: it makes
+the shipped plugin unreviewable and unfixable per release, and contradicts
+the repository's pinned-source rule and release-only update policy. The pin
+still upgrades through reviewed PRs.
+
+**Adapt the source into `plugins/dsh-context` like dsh-vision.** Rejected:
+dsh-context is not a seam Oh-DSH needs to rewrite — it is a self-contained
+plugin with its own build; an adapted copy would fork the panel for no
+architectural gain and double the upgrade work.
+
+**Manifest-only `plugins/` adapter like better-sidebar-runtime.** Rejected:
+that adapter exists because Oh-DSH compiles the upstream host itself with
+repo-controlled externals. dsh-context builds itself correctly; a duplicate
+manifest would only drift from the upstream version.
+
+**Include TUI.** Rejected per the issue discussion: the value is the
+interactive dashboard; the upstream explicitly does not target TUI.
+
+## Consequences
+
+- Desktop and Web users get the Context panel and `/context` out of the box;
+  the panel coexists with the composer context ring (same facts, independent
+  tab).
+- The `make upstream` target now runs `pnpm --dir upstream/dsh-context
+  install --frozen-lockfile --ignore-scripts && run build`; CI and local
+  builds need that install to succeed.
+- `tests/plugin-collection.test.ts` resolves `dsh-context` from the submodule
+  manifest; every future built-in plugin staged from an upstream manifest
+  extends that mapping.
+- The pinned DSH runtime must keep providing the plugin's host imports
+  (zod, scoped schemastery/cordis peers) — a runtime upgrade that drops them
+  breaks staging loudly at smoke time, not silently.

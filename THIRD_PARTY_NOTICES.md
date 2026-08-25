@@ -76,6 +76,22 @@ Host is shared by Desktop, Web, and TUI, and local file resolution remains
 inside the active Session workspace. The upstream license is retained with the
 packaged plugin.
 
+## dsh-context
+
+- Project: <https://github.com/bowenliang123/dsh-context>
+- Upstream package: `dsh-context@0.31.1`
+- Pinned release: `v0.31.1`
+- Pinned revision: `7e522ea342ba3a198b1eaa4557301212ae4098c9`
+- Declared license: Apache-2.0
+- Oh-DSH component: built-in Desktop and Web context insight plugin
+
+Oh-DSH builds the pinned upstream plugin inside its submodule with the
+upstream's own tsdown configuration and stages the prebuilt host and browser
+halves unmodified, so the context dashboard and the `/context` command behave
+exactly as the upstream publishes them. The pinned release is upgraded
+deliberately through the submodule pointer. We thank the upstream maintainer
+and keep the license with the packaged plugin.
+
 ## dsh-TUI
 
 - Project: <https://github.com/ccch1mneyyy/dsh-TUI>

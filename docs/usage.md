@@ -410,6 +410,23 @@ attachment button, paste, and drag-and-drop remain native DSH image input;
 DeepSeek V4 is admitted by the plugin's final check, while other models keep
 their declared image-input behavior.
 
+## Context insight
+
+Desktop and Web bundle
+[dsh-context](https://github.com/bowenliang123/dsh-context) (pinned release
+`v0.31.1`) as a built-in plugin. It contributes a Context panel with capacity,
+remaining, composition, history, event, and message statistics, and a
+`/context` command that summarizes the current context composition inside the
+conversation. The plugin is read-only insight: it observes the session through
+the same projections DSH drives and never mutates the conversation.
+
+The panel coexists with the composer's native context ring; both present the
+same capacity facts. The TUI surface does not bundle the plugin — it is built
+around interactive panels, and the upstream maintainer does not target TUI.
+
+Oh-DSH upgrades the pin deliberately through the submodule revision with each
+release; it does not follow npm latest automatically.
+
 ## Desktop operations
 
 ### Conversation input history

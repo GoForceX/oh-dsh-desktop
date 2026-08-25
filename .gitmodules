@@ -6,3 +6,7 @@
 	path = upstream/dsh-TUI
 	url = https://github.com/ccch1mneyyy/dsh-TUI.git
 	branch = main
+[submodule "upstream/dsh-context"]
+	path = upstream/dsh-context
+	url = https://github.com/bowenliang123/dsh-context.git
+	branch = main

@@ -1005,6 +1005,7 @@ const SURFACE_PACKAGE_NAMES = Object.freeze({
     '@oh-dsh/panel-controls',
     '@oh-dsh/pinned-summary',
     '@oh-dsh/plugin-marketplace',
+    'dsh-context',
   ]),
   web: new Set([
     '@oh-dsh/web',
@@ -1016,6 +1017,7 @@ const SURFACE_PACKAGE_NAMES = Object.freeze({
     '@oh-dsh/sidebar',
     '@oh-dsh/panel-controls',
     '@oh-dsh/plugin-marketplace',
+    'dsh-context',
   ]),
   tui: new Set([
     '@deepseek-harness-tui/dsh-tui',
@@ -1089,6 +1091,17 @@ function installDesktopPackages(surface = 'all') {
         [join(root, 'dist', 'web', 'client.js'), 'dist/client.js'],
         [join(root, 'dist', 'web', 'client.js.map'), 'dist/client.js.map'],
         [join(root, 'dist', 'web', 'cordis.patch.yml'), 'dist/cordis.patch.yml'],
+      ],
+    },
+    {
+      // dsh-context builds itself inside the submodule with its own tsdown
+      // config (host ESM + browser client bundle with the DSH module-loader
+      // banner); stage the prebuilt lib like the dsh-TUI renderer.
+      manifest: join(root, 'upstream', 'dsh-context', 'package.json'),
+      files: [
+        [join(root, 'upstream', 'dsh-context', 'lib'), 'lib'],
+        [join(root, 'upstream', 'dsh-context', 'cordis.patch.yml'), 'cordis.patch.yml'],
+        [join(root, 'upstream', 'dsh-context', 'LICENSE'), 'LICENSE'],
       ],
     },
     {
