@@ -28,6 +28,9 @@ export const BUNDLED_DESKTOP_CLIENT_PLUGINS = [
 export const BUNDLED_DESKTOP_HOST_PLUGINS = [
   '@oh-dsh/better-sidebar-runtime',
   '@oh-dsh/liangshen',
+  // Pinned upstream host plugin (upstream/dsh-TUI/dsh-auth): no browser
+  // half; the /auth command interacts through the user-questions seam.
+  '@deepseek-harness-tui/dsh-auth',
 ] as const
 
 /** Every protected plugin shipped inside the desktop distribution. */

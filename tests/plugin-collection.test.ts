@@ -29,9 +29,13 @@ test('desktop bundle registers every packaged DSH plugin', () => {
     assert.equal(manifest.dshClient, undefined)
   }
   for (const plugin of BUNDLED_DESKTOP_HOST_PLUGINS) {
-    const directory = plugin.slice(plugin.lastIndexOf('/') + 1)
-    const manifest = JSON.parse(readFileSync(join(root, 'plugins', directory, 'package.json'), 'utf8'))
+    const manifestPath = plugin === '@deepseek-harness-tui/dsh-auth'
+      ? join(root, 'upstream', 'dsh-TUI', 'dsh-auth', 'package.json')
+      : join(root, 'plugins', plugin.slice(plugin.lastIndexOf('/') + 1), 'package.json')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
     assert.equal(manifest.name, plugin)
-    assert.equal(manifest.dsh, undefined)
+    // Host plugins enroll no browser half; upstream bundle manifests may
+    // still declare their patch layer.
+    assert.equal(manifest.dsh?.client, undefined)
   }
 })

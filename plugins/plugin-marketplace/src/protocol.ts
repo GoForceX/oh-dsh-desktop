@@ -34,6 +34,7 @@ const PROTECTED_PLUGIN_IDS = new Set([
   'desktop-sidebar',
   'dsh-better-sidebar',
   'dsh-context',
+  'dsh-auth',
   'sidebar',
   'oh-dsh-desktop',
   'panel-controls',
@@ -56,12 +57,14 @@ const PROTECTED_PLUGIN_PACKAGES = new Set([
   'dsh-better-sidebar',
   'dsh-cc-tui',
   'dsh-context',
+  '@deepseek-harness-tui/dsh-auth',
 ])
 
 const PROTECTED_PLUGIN_REPOSITORIES = new Set([
   'dsh-external/dsh-better-sidebar',
   'omdsh-dev/dsh-better-sidebar',
   'bowenliang123/dsh-context',
+  'ccch1mneyyy/dsh-auth',
 ])
 
 /** Marketplace code cannot replace a shell or its transaction owner. */

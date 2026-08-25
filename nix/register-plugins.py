@@ -37,8 +37,8 @@ def main():
         "liangshen": os.path.join("plugins", "liangshen"),
     }
     selected = {
-        "full": set(plugin_dirs) | {"tui-renderer", "dsh-context"},
-        "web": {"web", "skins", "sidebar", "panel-controls", "pinned-summary", "better-sidebar-runtime", "vision", "liangshen", "dsh-context"},
+        "full": set(plugin_dirs) | {"tui-renderer", "dsh-context", "dsh-auth"},
+        "web": {"web", "skins", "sidebar", "panel-controls", "pinned-summary", "better-sidebar-runtime", "vision", "liangshen", "dsh-context", "dsh-auth"},
         "tui": {"tui", "tui-renderer", "skins", "vision"},
     }.get(surface)
     if selected is None:
@@ -64,6 +64,21 @@ def main():
             f.write("\n")
 
         deps_link = os.path.join(package_dir, "node_modules")
+        if plugin_key == "dsh-auth":
+            # Prebuilt npm release mounted directly on full and web; keeps
+            # the upstream lib/ layout its manifest main expects.
+            src_base = os.path.join(bundle_root, "auth")
+            for fname in os.listdir(src_base):
+                src = os.path.join(src_base, fname)
+                dst = os.path.join(package_dir, fname)
+                if os.path.isdir(src):
+                    shutil.copytree(src, dst)
+                else:
+                    shutil.copy2(src, dst)
+            os.symlink(node_modules, deps_link)
+            installed_versions[name] = manifest["version"]
+            print(f"registered {name}")
+            continue
         if plugin_key == "dsh-context":
             # Prebuilt npm release: its files live beside the manifest in the
             # bundle's context/ dir, keeping the upstream lib/ layout its
@@ -78,6 +93,7 @@ def main():
                     shutil.copy2(src, dst)
             os.symlink(node_modules, deps_link)
             installed_versions[name] = manifest["version"]
+            print(f"registered {name}")
             continue
         if plugin_key == "tui-renderer":
             # The renderer requires React 19 while the Web runtime carries

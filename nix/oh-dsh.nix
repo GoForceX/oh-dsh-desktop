@@ -188,7 +188,17 @@ let
         $out/lib/oh-dsh/manifests/tui-renderer.json
       cp upstream/dsh-context/package.json \
         $out/lib/oh-dsh/manifests/dsh-context.json
+      cp upstream/dsh-auth-release/package.json \
+        $out/lib/oh-dsh/manifests/dsh-auth.json
 
+      # Carry the prebuilt subscription OAuth plugin for registration into
+      # the runtime (npm release layout, same as the context plugin).
+      mkdir -p $out/lib/oh-dsh/auth
+      cp -r upstream/dsh-auth-release/lib $out/lib/oh-dsh/auth/lib
+      cp upstream/dsh-auth-release/dsh-plugin.json \
+        upstream/dsh-auth-release/cordis.patch.yml \
+        upstream/dsh-auth-release/LICENSE \
+        $out/lib/oh-dsh/auth/ 2>/dev/null || true
       # Carry the prebuilt context plugin (npm release layout: lib/ + patch +
       # license) for registration into the runtime.
       mkdir -p $out/lib/oh-dsh/context
@@ -292,10 +302,32 @@ pkgs.stdenv.mkDerivation {
     if [ -d "${ohDshBundle}/lib/oh-dsh/extra-deps" ]; then
       for dep in ${ohDshBundle}/lib/oh-dsh/extra-deps/*/; do
         name=$(basename "$dep")
-        if [ ! -d "$out/dsh-runtime/node_modules/$name" ]; then
-          cp -r "$dep" "$out/dsh-runtime/node_modules/$name"
-          chmod -R u+w "$out/dsh-runtime/node_modules/$name"
-        fi
+        # Scoped entries (e.g. @deepseek-harness-tui) must merge package by
+        # package; a plain skip would drop dsh-auth beside the renderer.
+        case "$name" in
+          @*)
+            mkdir -p "$out/dsh-runtime/node_modules/$name"
+            for sub in "$dep"*/; do
+              subname="$name/$(basename "$sub")"
+              if [ ! -d "$out/dsh-runtime/node_modules/$subname" ]; then
+                cp -r "$sub" "$out/dsh-runtime/node_modules/$subname"
+                chmod -R u+w "$out/dsh-runtime/node_modules/$subname"
+                # Same dependency-root link collect-deps.py gives collected
+                # packages: without it the renderer's private link resolves
+                # to the store real path and peer imports cannot be found.
+                if [ ! -e "$out/dsh-runtime/node_modules/$subname/node_modules" ]; then
+                  ln -s ../.. "$out/dsh-runtime/node_modules/$subname/node_modules"
+                fi
+              fi
+            done
+            ;;
+          *)
+            if [ ! -d "$out/dsh-runtime/node_modules/$name" ]; then
+              cp -r "$dep" "$out/dsh-runtime/node_modules/$name"
+              chmod -R u+w "$out/dsh-runtime/node_modules/$name"
+            fi
+            ;;
+        esac
       done
     fi
 

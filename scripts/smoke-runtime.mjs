@@ -183,14 +183,10 @@ try {
   }
 
   for (const pluginId of BUNDLED_DESKTOP_HOST_PLUGINS) {
-    assert.ok(existsSync(join(
-      resources,
-      'dsh-runtime',
-      'node_modules',
-      ...pluginId.split('/'),
-      'dist',
-      'index.js',
-    )), `${pluginId} Host bundle is missing`)
+    const packageDir = join(resources, 'dsh-runtime', 'node_modules', ...pluginId.split('/'))
+    const manifest = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8'))
+    assert.ok(existsSync(join(packageDir, manifest.main ?? join('dist', 'index.js'))),
+      `${pluginId} Host bundle is missing`)
   }
 
   const client = spawnSync(electronBinary, [

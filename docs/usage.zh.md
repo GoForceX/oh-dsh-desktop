@@ -367,6 +367,15 @@ Desktop 和 Web 内置
 
 Oh-DSH 通过子模块固定版本，随自身发行节奏升级，不会自动跟随 npm latest。
 
+## 订阅账号 OAuth 登录
+
+Desktop 和 Web 内置上游 [dsh-auth](https://github.com/ccch1mneyyy/dsh-auth)
+host 插件（固定在 dsh-TUI 子模块内；TUI 通过其 renderer 加载同一包）。它注册
+订阅账号 LLM 路由——ChatGPT/Codex、Claude Pro/Max 与 SuperGrok——并提供
+`/auth` 命令完成登录、查看状态与退出。交互式登录流程走各面已有的问答 UI；
+在没有交互面的环境中，命令会给出指引并拒绝，而不是假定存在浏览器。凭据保存
+在既有的 Oh-DSH 数据目录中。
+
 ## Desktop 操作
 
 ### 对话输入历史
