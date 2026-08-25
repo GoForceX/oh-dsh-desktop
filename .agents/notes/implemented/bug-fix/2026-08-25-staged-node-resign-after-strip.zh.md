@@ -30,6 +30,9 @@ Silicon 上的 Mach-O 必须携带有效代码签名；剥离会使签名失效�
 
 ## Consequences
 
+- 剥离行为本身由
+  [精简包](../../feature/2026-08-25-cli-first-install-and-lean-packages.md)
+  决策拥有；本 note 只拥有其在 macOS 上的签名后果。
 - `stage:dsh`、`make web` 和 `make desktop` 在 macOS arm64 上恢复可用。
 - macOS 构建的 Web/TUI 包携带重签过的剥离 Node，而不是被杀死的 Node。
 - Linux 与 Windows 的 staging 路径不变。

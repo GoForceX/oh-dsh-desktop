@@ -33,6 +33,9 @@ local development convenience; the warning preserves it while the runtime
 
 ## Consequences
 
+- The stripping behavior itself is owned by the
+  [lean-packages](../../feature/2026-08-25-cli-first-install-and-lean-packages.md)
+  decision; this note owns the macOS signature consequence of it.
 - `stage:dsh`, `make web`, and `make desktop` work again on macOS arm64.
 - macOS-built Web/TUI packages carry a re-signed, stripped Node instead of a
   killed one.
