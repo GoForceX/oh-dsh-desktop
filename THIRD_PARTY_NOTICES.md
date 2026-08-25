@@ -95,12 +95,15 @@ and keep the license with the packaged plugin.
 ## dsh-TUI
 
 - Project: <https://github.com/ccch1mneyyy/dsh-TUI>
-- Upstream package: `@deepseek-harness-tui/dsh-tui@0.9.0`
-- Pinned revision: `aca03b83850d4dc52728d068b2b1b05078ecb90b`
+- Upstream package: `@deepseek-harness-tui/dsh-tui@0.9.2`
+- Pinned revision: `b166c2ecc03ab61ec5aee16fe69cdeaf0e2a03a9`
 - Ecosystem specification: <https://github.com/T-Auto/dsh-ecosystem-spec>
-- Pinned ecosystem revision: `e1b902b0f95f4280a8e68d414ec7a4d25d6ce106`
+- Pinned ecosystem revision: `2d0236f7d4579814d9d177a58d03ebd168025960`
 - Protocol packages: <https://github.com/Yan-Zero/dsh-std>
 - Pinned protocol revision: `614dfa1ac168db79fcf4577cf0ebb34e2e3b944b`
+- Bundled OAuth package: <https://github.com/ccch1mneyyy/dsh-auth>
+  (`@deepseek-harness-tui/dsh-auth@0.1.0`, pinned revision
+  `fba02bcf7fb57e3d9885f73882d5835ccdf526c4`, MIT)
 - Declared license: MIT
 - Oh-DSH component: `@oh-dsh/tui`
 

@@ -751,16 +751,24 @@ function runtimePackageDirectory(name) {
   return join(runtime, 'node_modules', ...name.split('/'))
 }
 
-function resolveDependencyManifest(requireFromPackage, dependency) {
+function resolveDependencyManifest(requireFromPackage, dependency, fromDirectory) {
   try {
     return requireFromPackage.resolve(`${dependency}/package.json`)
   } catch (packageJsonError) {
-    let directory = dirname(requireFromPackage.resolve(dependency))
+    // A restricted exports map (e.g. @earendil-works/pi-ai) can hide both
+    // ./package.json and the main entry from require.resolve; walk the
+    // node_modules chain from the requiring package instead.
+    let directory = fromDirectory
     for (;;) {
-      const manifestPath = join(directory, 'package.json')
-      if (existsSync(manifestPath)) {
-        const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
-        if (manifest.name === dependency) return manifestPath
+      for (const candidate of [
+        join(directory, 'node_modules', ...dependency.split('/')),
+        directory,
+      ]) {
+        const manifestPath = join(candidate, 'package.json')
+        if (existsSync(manifestPath)) {
+          const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+          if (manifest.name === dependency) return manifestPath
+        }
       }
       const parent = dirname(directory)
       if (parent === directory) throw packageJsonError
@@ -912,7 +920,7 @@ function installCompiledPackageDependencies(sourceManifestPath, packageDir) {
     for (const [dependency, optional] of dependencyNames(manifest)) {
       try {
         const dependencyTarget = installManifest(
-          resolveDependencyManifest(requireFromPackage, dependency),
+          resolveDependencyManifest(requireFromPackage, dependency, source),
         )
         linkDependency(target, dependency, dependencyTarget)
       } catch (error) {
@@ -928,7 +936,11 @@ function installCompiledPackageDependencies(sourceManifestPath, packageDir) {
   for (const [dependency, optional] of dependencyNames(sourceManifest)) {
     try {
       const dependencyTarget = installManifest(
-        resolveDependencyManifest(requireFromSource, dependency),
+        resolveDependencyManifest(
+          requireFromSource,
+          dependency,
+          dirname(sourceManifestPath),
+        ),
       )
       const link = join(installRoot, ...dependency.split('/'))
       mkdirSync(dirname(link), { recursive: true })

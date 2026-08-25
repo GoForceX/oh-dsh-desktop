@@ -33,7 +33,10 @@ renderer 产物。
 
 ## Consequences
 
-- staged TUI 使用 dsh-TUI 0.9.0，并且在 Oh-DSH 环境中不再显示上游后台更新提示。
+- 固定版本已前移：staged TUI 在
+  [0.9.2 升级](2026-08-26-upstream-tui-0.9.2-upgrade.md)下运行 dsh-TUI 0.9.2，
+  该决策仅取代此处的版本事实；本记录继续拥有更新门控决策——Oh-DSH 环境中不
+  显示上游后台更新提示，升级只走刻意的固定版本流程。
 - 后续升级 dsh-TUI 需要一次有意的 pinned upgrade，并重新完成 adapter/staging
   验证。
 - 复制后的 renderer 仍保留上游手动更新实现以维持兼容，但后台检查不再向用户

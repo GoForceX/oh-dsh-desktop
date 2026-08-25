@@ -236,6 +236,7 @@ export function adaptTuiRendererPackage(packageDir) {
     ['Show the dsh-tui configuration source', 'Show the Oh-DSH TUI configuration source'],
     ['Update dsh-tui and restart', 'Update Oh-DSH TUI and restart'],
     ['Practice programming with dsh-tui', 'Practice programming with Oh-DSH TUI'],
+    ['Restart dsh-tui and resume this session', 'Restart Oh-DSH TUI and resume this session'],
     ['Exit dsh-tui', 'Exit Oh-DSH TUI'],
   ]) {
     replaceEvery(commands, before, after)
