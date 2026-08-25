@@ -40,6 +40,12 @@ that already ships a complete DSH plugin build of its own.
   with runtime `dependencies`/`optionalDependencies` — a peers-only upstream
   package is outside the pnpm workspace, so the deploy filter could never
   match it.
+- The `dist:*` package scripts now stage with their matching `--surface`
+  selector (desktop/web/tui). They previously staged `all`, which would have
+  shipped the Desktop/Web-only dsh-context inside TUI release archives — and
+  had always bundled foreign-surface packages into every distribution. The
+  all-surface runtime bundle of `runtime-release.yml` keeps staging `all` by
+  design.
 
 ## Alternatives considered
 

@@ -43,9 +43,17 @@ try {
 // early exit would kill the whole root build and leave dist/ stale.
 if (stamped !== revision || !existsSync(libEntry)) {
   // --ignore-workspace keeps this an isolated install of the submodule's own
-  // pinned lockfile; without it pnpm may resolve the parent workspace
-  // instead and skip the submodule's toolchain entirely.
-  run('pnpm', ['install', '--frozen-lockfile', '--ignore-scripts', '--ignore-workspace'])
+  // pinned lockfile. --config.manage-package-manager-versions=false stops a
+  // standalone CI pnpm from trying to re-verify its own native-binary
+  // identity against the upstream lockfile (pinned to pnpm@11.9.0 by the
+  // author's npm-installed build).
+  run('pnpm', [
+    'install',
+    '--frozen-lockfile',
+    '--ignore-scripts',
+    '--ignore-workspace',
+    '--config.manage-package-manager-versions=false',
+  ])
   run('pnpm', ['run', 'build'])
   mkdirSync(dirname(stamp), { recursive: true })
   writeFileSync(stamp, `${revision}\n`)

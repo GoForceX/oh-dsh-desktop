@@ -31,6 +31,10 @@ npm 插件。Oh-DSH 需要为一个自带完整 DSH 插件构建体系的外部�
   适配 manifest 或依赖镜像。也正因如此，Windows 依赖 deploy 只对声明了运行时
   `dependencies`/`optionalDependencies` 的 manifest 执行——只有 peer 的上游包不在
   pnpm workspace 内，deploy 的 filter 永远匹配不到它。
+- `dist:*` 打包脚本现在按各自的 `--surface` 选择器（desktop/web/tui）暂存。此前
+  它们暂存 `all`，这会把仅限 Desktop/Web 的 dsh-context 打进 TUI 发行包——而且
+  一直以来每个发行包都混入了其他面的插件。`runtime-release.yml` 的全面运行时
+  bundle 按设计继续暂存 `all`。
 
 ## Alternatives considered
 
