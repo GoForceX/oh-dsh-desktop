@@ -30,8 +30,8 @@ separate Web Terminal or shell plugin is required.
 ## DSH-better-sidebar
 
 - Project: <https://github.com/omdsh-dev/DSH-better-sidebar>
-- Pinned release: `v0.15.0`
-- Pinned revision: `f0965e1d6157a3e06ed2f5c7775a64428d5d3c29`
+- Pinned release: `v0.15.2`
+- Pinned revision: `d9b8f15d9eab018742f97d67e54b2398504894cd`
 - Declared license: MIT
 - Oh-DSH components: `@oh-dsh/better-sidebar-runtime` and
   `@oh-dsh/sidebar`
