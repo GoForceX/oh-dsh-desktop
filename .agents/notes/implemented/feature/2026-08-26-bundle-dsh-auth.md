@@ -36,6 +36,11 @@ patch row. Desktop and Web users had no path to subscription accounts.
 - Marketplace protection covers the plugin id, package name, and
   `ccch1mneyyy/dsh-auth` repository, with a refusal test mirroring the
   dsh-context one.
+- Nix registers the package for the full and web surfaces from the bundle's
+  `auth/` dir (npm release layout), and the extra-deps copy loop now merges
+  scoped entries package by package instead of skipping a scope directory
+  the renderer already created. The full `oh-dsh` package builds clean with
+  both `@deepseek-harness-tui/dsh-auth` and `dsh-context` registered.
 
 ## Alternatives considered
 
