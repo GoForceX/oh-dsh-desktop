@@ -65,7 +65,7 @@ let
     owner = "omdsh-dev";
     repo = "DSH-better-sidebar";
     rev = "d9b8f15d9eab018742f97d67e54b2398504894cd";
-    hash = "sha256-TTct9byCf0UobE5E1BGPCSaqxCufvFN9zCgUTXy3wQY=";
+    hash = "sha256-bfpop+QKF8fRAl/vWjcTJgTkBA2bvHK+/KlBkR0NLa4=";
   };
   contextRelease = pkgs.fetchurl {
     url = "https://registry.npmjs.org/dsh-context/-/dsh-context-0.31.1.tgz";
@@ -75,13 +75,13 @@ let
     owner = "ccch1mneyyy";
     repo = "dsh-TUI";
     rev = "b166c2ecc03ab61ec5aee16fe69cdeaf0e2a03a9";
-    hash = "sha256-2akItjIHdFH7cOQa1zgoK8rn0RulUnztpCd3IELFK1Q=";
+    hash = "sha256-AU3SxnjucUA8yvQia+cw/q3cqItRCFb/njaiRoiOS9c=";
   };
   dshAuthSrc = pkgs.fetchFromGitHub {
     owner = "ccch1mneyyy";
     repo = "dsh-auth";
     rev = "fba02bcf7fb57e3d9885f73882d5835ccdf526c4";
-    hash = "sha256-9cJxkcWeWoFf2chJRDZWnKQvcWj5Ur0JzCt8spyw/t8=";
+    hash = "sha256-ip/jdsm/YiPvVdZ0o2m/thImd+4ZmRjzQKzXvJ9dAK8=";
   };
   tuiRelease = pkgs.fetchurl {
     url = "https://registry.npmjs.org/@deepseek-harness-tui/dsh-tui/-/dsh-tui-0.9.2.tgz";
@@ -95,7 +95,7 @@ let
     owner = "T-Auto";
     repo = "dsh-ecosystem-spec";
     rev = "2d0236f7d4579814d9d177a58d03ebd168025960";
-    hash = "sha256-0V5i5OfUGAwZDmnzWBmZoBpDm1SnYMqWdV6aGuJ67Ps=";
+    hash = "sha256-7PK0j8gl3+1esTzjlrKOZkEei6OL13H/4JiIOf5LOR8=";
   };
   tuiStdSrc = pkgs.fetchFromGitHub {
     owner = "Yan-Zero";
@@ -112,14 +112,14 @@ let
     rm -rf $out/upstream/DSH-better-sidebar $out/upstream/dsh-TUI $out/upstream/dsh-context
     cp -r ${betterSidebarSrc} $out/upstream/DSH-better-sidebar
     cp -r ${tuiSrc} $out/upstream/dsh-TUI
+    chmod -R u+w $out/upstream/dsh-TUI
+    rm -rf $out/upstream/dsh-TUI/dsh-ecosystem-spec \
+      $out/upstream/dsh-TUI/vendor/dsh-std
     # The renderer's bundled OAuth package arrives as a gitlink inside
     # tuiSrc; place its source so the pnpm resolution of link:./dsh-auth
     # finds the same tree the submodule build compiles.
     rm -rf $out/upstream/dsh-TUI/dsh-auth
     cp -r ${dshAuthSrc} $out/upstream/dsh-TUI/dsh-auth
-    chmod -R u+w $out/upstream/dsh-TUI
-    rm -rf $out/upstream/dsh-TUI/dsh-ecosystem-spec \
-      $out/upstream/dsh-TUI/vendor/dsh-std
     mkdir -p $out/upstream/dsh-TUI/vendor
     cp -r ${tuiEcosystemSpecSrc} \
       $out/upstream/dsh-TUI/dsh-ecosystem-spec
@@ -147,7 +147,7 @@ let
     pnpmDeps = pkgs.fetchPnpmDeps {
       inherit pname version src;
       fetcherVersion = 4;
-      hash = "sha256-dlysGu1HP7WSjURqeDFttqyeDk0igfu8Qr3b0IVE0Rs=";
+      hash = "sha256-mo7azFsAPB+KuizGuP+8+x0Q0s6W/v+iyLbhbNKYOu8=";
     };
 
     nativeBuildInputs = [

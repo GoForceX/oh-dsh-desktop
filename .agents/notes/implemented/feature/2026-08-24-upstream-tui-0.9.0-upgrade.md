@@ -34,8 +34,11 @@ and packaged Nix builds need a reproducible renderer artifact.
 
 ## Consequences
 
-- The staged TUI runs dsh-TUI 0.9.0 and no longer emits the upstream automatic
-  update notice under Oh-DSH.
+- The pin moved on: the staged TUI runs dsh-TUI 0.9.2 under the
+  [0.9.2 upgrade](2026-08-26-upstream-tui-0.9.2-upgrade.md), which supersedes
+  only the version facts here; this record still owns the update-gating
+  decision — no upstream automatic update notice under Oh-DSH, upgrades only
+  through the deliberate pinned flow.
 - Updating dsh-TUI now requires one deliberate pinned upgrade and a fresh
   adapter/staging verification.
 - The manual upstream update implementation remains in the copied renderer

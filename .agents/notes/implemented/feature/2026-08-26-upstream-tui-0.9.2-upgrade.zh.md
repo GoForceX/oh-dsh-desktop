@@ -46,8 +46,10 @@ Status: implemented
 - TUI 在既有 Oh-DSH 启动器契约下获得 0.9.2 特性（会话身份、recap、粘贴折叠、
   悬停交互、`/auth` OAuth 登录、`/reload`、`/restart`）；已在 pty 中用 Liangshen
   预设验证引导。
-- Nix 的 `pnpmDeps` 哈希无法在无本地 nix 的环境重算，仍需下一位执行
-  `nix build` 的人按报错提示一行刷新（不匹配会大声失败并打印正确哈希）。
+- Nix 组装已端到端验证：sidebar、renderer、ecosystem-spec 与 dsh-auth 源的
+  fetchFromGitHub 树哈希以及 `fetchPnpmDeps` 闭包哈希均由真实 `nix build`
+  刷新，完整 `oh-dsh` 包构建通过——这也是 dsh-context Nix 集成首次经真实
+  构建验证。
 - liangshen 预设修订号移至
   `liangshen-toolcall-full-catalog-subagents-durable-hint-v5`（持久的指令提示
   去重），Oh-DSH 侧测试无需改动。

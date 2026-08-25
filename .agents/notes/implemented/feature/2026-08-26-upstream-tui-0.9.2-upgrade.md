@@ -55,9 +55,11 @@ needs the published form.
   hover interactions, OAuth sign-in via `/auth`, `/reload`, `/restart`)
   under the existing Oh-DSH launcher contract; boot verified with the
   Liangshen preset in a pty.
-- The Nix `pnpmDeps` hash could not be recomputed without a local nix and
-  still needs a one-line refresh by the next `nix build` runner (the
-  mismatch fails loudly and prints the correct hash).
+- The Nix assembly is verified end to end: the fetchFromGitHub tree hashes
+  for the sidebar, renderer, ecosystem-spec, and dsh-auth sources, plus the
+  `fetchPnpmDeps` closure hash, were refreshed from an actual `nix build`
+  and the full `oh-dsh` package builds clean — the first real-build
+  validation of the dsh-context Nix integration as well.
 - liangshen's preset revision moves to
   `liangshen-toolcall-full-catalog-subagents-durable-hint-v5` (durable
   instruction-hint dedupe) with no Oh-DSH-side test changes.
