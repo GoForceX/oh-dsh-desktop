@@ -39,10 +39,12 @@ try {
 } catch {
   stamped = undefined
 }
-if (stamped === revision && existsSync(libEntry)) process.exit(0)
-
-run('pnpm', ['install', '--frozen-lockfile', '--ignore-scripts'])
-run('pnpm', ['run', 'build'])
-mkdirSync(dirname(stamp), { recursive: true })
-writeFileSync(stamp, `${revision}\n`)
-console.log(`Built upstream/dsh-context at ${revision}`)
+// Never process.exit() here: scripts/build.mjs imports this module, and an
+// early exit would kill the whole root build and leave dist/ stale.
+if (stamped !== revision || !existsSync(libEntry)) {
+  run('pnpm', ['install', '--frozen-lockfile', '--ignore-scripts'])
+  run('pnpm', ['run', 'build'])
+  mkdirSync(dirname(stamp), { recursive: true })
+  writeFileSync(stamp, `${revision}\n`)
+  console.log(`Built upstream/dsh-context at ${revision}`)
+}
