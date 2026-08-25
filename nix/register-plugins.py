@@ -105,7 +105,16 @@ def main():
             for dependency in sorted(dependency_names):
                 extra = os.path.join(extra_deps, *dependency.split("/"))
                 shared = os.path.join(node_modules, *dependency.split("/"))
-                target = extra if os.path.isdir(extra) else shared
+                if dependency == "@deepseek-harness-tui/dsh-auth":
+                    if not os.path.isdir(shared) and os.path.isdir(extra):
+                        os.makedirs(os.path.dirname(shared), exist_ok=True)
+                        shutil.copytree(extra, shared, symlinks=True)
+                    target = shared
+                    dependency_root = os.path.join(target, "node_modules")
+                    if os.path.isdir(target) and not os.path.lexists(dependency_root):
+                        os.symlink(node_modules, dependency_root)
+                else:
+                    target = extra if os.path.isdir(extra) else shared
                 if not os.path.isdir(target):
                     raise FileNotFoundError(f"missing TUI runtime dependency: {dependency}")
                 link = os.path.join(deps_link, *dependency.split("/"))
