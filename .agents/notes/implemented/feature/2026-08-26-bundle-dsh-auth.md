@@ -40,11 +40,11 @@ patch row. Desktop and Web users had no path to subscription accounts.
   `auth/` dir (npm release layout), and the extra-deps copy loop now merges
   scoped entries package by package instead of skipping a scope directory
   the renderer already created. The full `oh-dsh` package builds clean with
-  both `@deepseek-harness-tui/dsh-auth` and `dsh-context` registered. Scoped
-  extra-deps copies also receive the same `node_modules -> ../..`
-  dependency-root link collect-deps.py creates (only when absent), so the
-  renderer's private link to the auth copy resolves peer imports through the
-  runtime graph.
+  both `@deepseek-harness-tui/dsh-auth` and `dsh-context` registered. The
+  renderer always points its private `dsh-auth` dependency at the final runtime
+  copy: full/web reuse the registered package, while TUI materializes it from
+  extra-deps. That copy resolves peers through the final runtime's
+  `node_modules`, never through the immutable bundle-store source path.
 
 ## Alternatives considered
 
@@ -65,6 +65,9 @@ and works unchanged on every surface today.
 
 - `/auth` works on all three surfaces against the same stored credentials
   in the Oh-DSH data directory.
+- `tests/nix-register-plugins.test.ts` imports the renderer through its actual
+  dependency link on full and TUI fixtures and requires `dsh-auth` to resolve a
+  peer from the final runtime graph.
 - Upgrading the renderer pin moves the dsh-auth source with it; the
   standalone staging spec follows the nested submodule path, so a future
   move of the nested package breaks staging loudly.
