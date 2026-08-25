@@ -21,6 +21,18 @@ function currentRevision() {
   return result.stdout.trim()
 }
 
+// pnpm >= 11.20 re-verify their own engine identity whenever the running
+// binary differs from the project's packageManager pin, and the scoped
+// @pnpm/exe packages never published releases for the upstream's pnpm 11.9
+// line — so an ambient newer pnpm aborts before installing anything. Run the
+// install and the build through the pinned version itself via dlx; it sees
+// a matching pin and never delegates.
+function pinnedPnpmVersion() {
+  const manifest = JSON.parse(readFileSync(join(contextDir, 'package.json'), 'utf8'))
+  const match = /^pnpm@(\S+)$/.exec(manifest.packageManager ?? '')
+  return match?.[1] ?? null
+}
+
 function run(command, args) {
   const result = spawnSync(command, args, {
     cwd: contextDir,
@@ -30,6 +42,11 @@ function run(command, args) {
   if (result.error !== undefined || result.status !== 0) {
     throw new Error(`${command} ${args.join(' ')} failed in upstream/dsh-context`)
   }
+}
+
+function runPnpm(args) {
+  const version = pinnedPnpmVersion()
+  run('pnpm', version === null ? args : ['dlx', `pnpm@${version}`, ...args])
 }
 
 const revision = currentRevision()
@@ -43,18 +60,10 @@ try {
 // early exit would kill the whole root build and leave dist/ stale.
 if (stamped !== revision || !existsSync(libEntry)) {
   // --ignore-workspace keeps this an isolated install of the submodule's own
-  // pinned lockfile. --config.manage-package-manager-versions=false stops a
-  // standalone CI pnpm from trying to re-verify its own native-binary
-  // identity against the upstream lockfile (pinned to pnpm@11.9.0 by the
-  // author's npm-installed build).
-  run('pnpm', [
-    'install',
-    '--frozen-lockfile',
-    '--ignore-scripts',
-    '--ignore-workspace',
-    '--config.manage-package-manager-versions=false',
-  ])
-  run('pnpm', ['run', 'build'])
+  // pinned lockfile; without it pnpm may resolve the parent workspace
+  // instead and skip the submodule's toolchain entirely.
+  runPnpm(['install', '--frozen-lockfile', '--ignore-scripts', '--ignore-workspace'])
+  runPnpm(['run', 'build'])
   mkdirSync(dirname(stamp), { recursive: true })
   writeFileSync(stamp, `${revision}\n`)
   console.log(`Built upstream/dsh-context at ${revision}`)
