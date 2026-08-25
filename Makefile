@@ -18,8 +18,10 @@ build: upstream
 # Submodule checkouts follow the recorded gitlinks on every build, and dsh-TUI
 # recompiles only when its checked-out revision differs from the stamp, so an
 # incremental checkout never stages a stale renderer build as the new pin.
+# dsh-context keeps the same guard inside scripts/ensure-upstream-context.mjs,
+# which pnpm run build also invokes for the CI and dist:* staging paths.
 upstream:
-	git submodule update --init --recursive upstream/DSH-better-sidebar upstream/dsh-TUI
+	git submodule update --init --recursive upstream/DSH-better-sidebar upstream/dsh-TUI upstream/dsh-context
 	@if [ ! -f "$(TUI_COMPILE_STAMP)" ] \
 		|| [ "$$(git -C upstream/dsh-TUI rev-parse HEAD)" != "$$(cat $(TUI_COMPILE_STAMP) 2>/dev/null)" ]; then \
 		$(PNPM) --dir upstream/dsh-TUI install --frozen-lockfile --ignore-scripts; \
@@ -27,6 +29,7 @@ upstream:
 		mkdir -p $(dir $(TUI_COMPILE_STAMP)); \
 		git -C upstream/dsh-TUI rev-parse HEAD > $(TUI_COMPILE_STAMP); \
 	fi
+	$(NODE) scripts/ensure-upstream-context.mjs
 
 stage: build
 	$(PNPM) run stage:dsh

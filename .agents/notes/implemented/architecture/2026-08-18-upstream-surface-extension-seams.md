@@ -23,7 +23,12 @@ caused an undeclared nested package installation.
   transform upstream TypeScript sources.
 - In Nix builds, assemble the pinned source graph for dependency resolution,
   but consume the matching published TUI artifact and bundled dsh-std packages.
-  This keeps the build offline and avoids a second package installation.
+  This keeps the build offline and avoids a second package installation. The
+  dsh-context bundling later extended the same pattern — pin the release,
+  consume the published artifact in Nix — but deliberately ships the plugin
+  unadapted; that no-adapter policy and its build mechanism are owned by the
+  [dsh-context bundling](../feature/2026-08-25-bundle-dsh-context.md)
+  decision.
 - Build pinned DSH with its pnpm lock and release-age policy. Normalize the
   different pinned-source and llm-agents output roots during final assembly.
 - Keep bilingual source discovery out of pinned upstream and generated release

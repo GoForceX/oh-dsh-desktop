@@ -286,6 +286,16 @@ function stripNodeBinary() {
     return
   }
   console.log(`Stripped Node binary: ${executable}`)
+  // Stripping invalidates the mandatory arm64 code signature; without an
+  // ad-hoc re-sign macOS kills the staged Node on every launch.
+  if (process.platform === 'darwin') {
+    const signed = spawnSync('/usr/bin/codesign', ['--force', '--sign', '-', executable], { stdio: 'ignore' })
+    if (signed.error !== undefined || signed.status !== 0) {
+      console.log('Warning: codesign failed; the staged Node may be killed by macOS Gatekeeper')
+    } else {
+      console.log(`Re-signed stripped Node binary: ${executable}`)
+    }
+  }
 }
 
 function pruneNodeRuntime() {
@@ -803,7 +813,15 @@ function alignBetterSidebarPtyDependency(packageDir) {
 
 function installWindowsPackageDependencies(sourceManifestPath, packageDir) {
   const manifest = JSON.parse(readFileSync(sourceManifestPath, 'utf8'))
-  if (dependencyNames(manifest).size === 0) return
+  // Peer dependencies resolve from the staged runtime's hoisted tree (the
+  // dsh-context host imports zod and the scoped cordis/schemastery that way);
+  // only runtime dependencies need a pnpm deploy closure, and the workspace
+  // filter can never match an upstream-pinned package outside the workspace.
+  const runtimeDependencies = [
+    ...Object.keys(manifest.dependencies ?? {}),
+    ...Object.keys(manifest.optionalDependencies ?? {}),
+  ]
+  if (runtimeDependencies.length === 0) return
   const deployment = join(
     stage,
     'windows-dependencies',
@@ -995,6 +1013,7 @@ const SURFACE_PACKAGE_NAMES = Object.freeze({
     '@oh-dsh/panel-controls',
     '@oh-dsh/pinned-summary',
     '@oh-dsh/plugin-marketplace',
+    'dsh-context',
   ]),
   web: new Set([
     '@oh-dsh/web',
@@ -1006,6 +1025,7 @@ const SURFACE_PACKAGE_NAMES = Object.freeze({
     '@oh-dsh/sidebar',
     '@oh-dsh/panel-controls',
     '@oh-dsh/plugin-marketplace',
+    'dsh-context',
   ]),
   tui: new Set([
     '@deepseek-harness-tui/dsh-tui',
@@ -1079,6 +1099,17 @@ function installDesktopPackages(surface = 'all') {
         [join(root, 'dist', 'web', 'client.js'), 'dist/client.js'],
         [join(root, 'dist', 'web', 'client.js.map'), 'dist/client.js.map'],
         [join(root, 'dist', 'web', 'cordis.patch.yml'), 'dist/cordis.patch.yml'],
+      ],
+    },
+    {
+      // dsh-context builds itself inside the submodule with its own tsdown
+      // config (host ESM + browser client bundle with the DSH module-loader
+      // banner); stage the prebuilt lib like the dsh-TUI renderer.
+      manifest: join(root, 'upstream', 'dsh-context', 'package.json'),
+      files: [
+        [join(root, 'upstream', 'dsh-context', 'lib'), 'lib'],
+        [join(root, 'upstream', 'dsh-context', 'cordis.patch.yml'), 'cordis.patch.yml'],
+        [join(root, 'upstream', 'dsh-context', 'LICENSE'), 'LICENSE'],
       ],
     },
     {

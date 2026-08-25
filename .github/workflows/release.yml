@@ -138,14 +138,22 @@ jobs:
         run: pnpm run ${{ matrix.dist_script }}
 
       - name: Package Oh-DSH-Web distribution
-        run: node scripts/build-web.mjs
+        run: |
+          pnpm run stage:dsh -- --surface web
+          node scripts/build-web.mjs
 
       - name: Package Oh-DSH TUI distribution
-        run: node scripts/build-tui.mjs
+        run: |
+          pnpm run stage:dsh -- --surface tui
+          node scripts/build-tui.mjs
 
       - name: Package decoupled DSH runtime bundle
         shell: bash
         run: |
+          # The shared runtime bundle deliberately carries every surface's
+          # plugins; the two single-surface packages above left the stage
+          # scoped to TUI.
+          pnpm run stage:dsh
           DSH_VERSION="$(node -p "require('./dsh-source.json').version")"
           APP_VERSION="$(node -p "require('./package.json').version")"
           BUNDLE="release/oh-dsh-runtime-${DSH_VERSION}-${{ matrix.runtime_platform }}-${{ matrix.node_arch }}.tar.gz"

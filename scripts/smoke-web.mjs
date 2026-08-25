@@ -205,6 +205,7 @@ try {
     '@oh-dsh/panel-controls',
     '@oh-dsh/vision',
     '@oh-dsh/plugin-marketplace',
+    'dsh-context',
   ]) {
     const row = bootEntries.find(entry => entry.id === pluginId)
     assert.ok(row, `${pluginId} Host entry did not activate in the DSH client graph`)

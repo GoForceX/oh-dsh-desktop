@@ -354,6 +354,19 @@ oh-dsh-vision:
 附件按钮、粘贴和拖放都属于 DSH 原生图片输入；DeepSeek V4 的最终 admission check
 由插件放行，其他模型仍遵循各自的 image-input 元数据。
 
+## 上下文洞察
+
+Desktop 和 Web 内置
+[dsh-context](https://github.com/bowenliang123/dsh-context)（固定版本
+`v0.31.1`）插件。它提供 Context 面板，展示上下文容量、余量、组成、历史、事件与
+消息统计，并提供 `/context` 命令在会话内快速查看当前上下文组成。该插件只做只读
+洞察：通过 DSH 自身驱动的 projection 观察会话，不会改动对话内容。
+
+面板与 composer 原生的 context ring 并存，两者展示同一份容量事实。TUI 不内置该
+插件——它围绕交互式面板构建，上游维护者也不面向 TUI 适配。
+
+Oh-DSH 通过子模块固定版本，随自身发行节奏升级，不会自动跟随 npm latest。
+
 ## Desktop 操作
 
 ### 对话输入历史

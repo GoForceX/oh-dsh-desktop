@@ -14,7 +14,8 @@ test('tagged releases build and upload both TUI archive formats', () => {
     'utf8',
   ).replace(/\r\n?/g, '\n')
 
-  assert.match(workflow, /run: node scripts\/build-tui\.mjs/)
+  assert.match(workflow, /--surface tui\n\s+node scripts\/build-tui\.mjs/)
+  assert.match(workflow, /--surface web\n\s+node scripts\/build-web\.mjs/)
   assert.match(workflow, /release\/oh-dsh-tui-\*\.tar\.gz/)
   assert.match(workflow, /release\/oh-dsh-tui-\*\.zip/)
   assert.match(workflow, /fetch-depth: 0/)

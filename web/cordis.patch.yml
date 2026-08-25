@@ -42,3 +42,8 @@
 
     - id: oh-plugin-marketplace
       name: '@oh-dsh/plugin-marketplace'
+
+    # Built-in context insight panel (upstream dsh-context, pinned under
+    # upstream/dsh-context), shared with the desktop distribution.
+    - id: dsh-context
+      name: 'dsh-context'

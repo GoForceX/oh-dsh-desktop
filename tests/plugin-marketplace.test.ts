@@ -1422,6 +1422,35 @@ test('the marketplace refuses to modify protected desktop plugins', async () => 
   }
 })
 
+test('the marketplace protects the bundled dsh-context plugin', async () => {
+  const setup = fixture()
+  try {
+    setup.platform.catalog = {
+      schema: 'dsh-external-hub/v0.1',
+      generated: '2026-08-14T00:00:00Z',
+      repos: [{
+        name: 'dsh-context',
+        repo: 'bowenliang123/dsh-context',
+        category: 'plugin',
+        description: 'Context insight plugin already bundled by Oh-DSH',
+        bundle: true,
+      }],
+    }
+    await setup.manager.dispatch({ type: 'refresh' })
+    const snapshot = await setup.manager.dispatch({
+      type: 'prepare',
+      action: 'install',
+      pluginId: 'dsh-context',
+    })
+    assert.match(snapshot.error ?? '', /protected by Oh-DSH/)
+    assert.equal(snapshot.preview, null)
+    assert.equal(snapshot.catalog[0]?.protected, true)
+    assert.equal(setup.platform.commands.length, 0)
+  } finally {
+    setup.cleanup()
+  }
+})
+
 test('the marketplace protects the upstream Better Sidebar alias', async () => {
   const setup = fixture()
   try {

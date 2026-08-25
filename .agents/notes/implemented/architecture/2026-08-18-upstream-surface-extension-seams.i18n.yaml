@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-18-upstream-surface-extension-seams.md
-2026-08-18-upstream-surface-extension-seams.md: 20760be5199343af9ee2c925f8e1b9efd3007514
-2026-08-18-upstream-surface-extension-seams.zh.md: 0790524dda24f387c9526f10bf484b15cfe180b0
+2026-08-18-upstream-surface-extension-seams.md: bd4f61ed627d89def30574ddf977fd54d9fb73c7
+2026-08-18-upstream-surface-extension-seams.zh.md: 22cd0562391c09c2348f1a7accacb8ecd23eba15

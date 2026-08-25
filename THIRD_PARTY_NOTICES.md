@@ -30,8 +30,8 @@ separate Web Terminal or shell plugin is required.
 ## DSH-better-sidebar
 
 - Project: <https://github.com/omdsh-dev/DSH-better-sidebar>
-- Pinned release: `v0.15.0`
-- Pinned revision: `f0965e1d6157a3e06ed2f5c7775a64428d5d3c29`
+- Pinned release: `v0.15.2`
+- Pinned revision: `d9b8f15d9eab018742f97d67e54b2398504894cd`
 - Declared license: MIT
 - Oh-DSH components: `@oh-dsh/better-sidebar-runtime` and
   `@oh-dsh/sidebar`
@@ -75,6 +75,22 @@ credentials, settings, tool-output, and cancellation contracts. The built-in
 Host is shared by Desktop, Web, and TUI, and local file resolution remains
 inside the active Session workspace. The upstream license is retained with the
 packaged plugin.
+
+## dsh-context
+
+- Project: <https://github.com/bowenliang123/dsh-context>
+- Upstream package: `dsh-context@0.31.1`
+- Pinned release: `v0.31.1`
+- Pinned revision: `7e522ea342ba3a198b1eaa4557301212ae4098c9`
+- Declared license: Apache-2.0
+- Oh-DSH component: built-in Desktop and Web context insight plugin
+
+Oh-DSH builds the pinned upstream plugin inside its submodule with the
+upstream's own tsdown configuration and stages the prebuilt host and browser
+halves unmodified, so the context dashboard and the `/context` command behave
+exactly as the upstream publishes them. The pinned release is upgraded
+deliberately through the submodule pointer. We thank the upstream maintainer
+and keep the license with the packaged plugin.
 
 ## dsh-TUI
 

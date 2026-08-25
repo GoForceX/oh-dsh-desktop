@@ -30,6 +30,10 @@ download suggests.
 - After native PTY compilation, stage only the runtime files needed to launch:
   strip non-Windows Node symbols, remove Node headers/share/npm tooling, and
   remove DSH runtime TypeScript sources, declarations, and source maps.
+  Stripping a macOS arm64 Node invalidates its mandatory code signature, so
+  staging re-signs it ad-hoc — the
+  [post-strip re-sign](../../bug-fix/2026-08-25-staged-node-resign-after-strip.md)
+  decision owns that behavior.
 
 ## Alternatives considered
 

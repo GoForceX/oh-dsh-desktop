@@ -20,6 +20,8 @@ export const BUNDLED_DESKTOP_CLIENT_PLUGINS = [
   '@oh-dsh/pinned-summary',
   '@oh-dsh/plugin-marketplace',
   '@oh-dsh/vision',
+  // Pinned upstream plugin (upstream/dsh-context) staged under its npm name.
+  'dsh-context',
 ] as const
 
 /** Host-only capability providers shipped inside the desktop runtime. */

@@ -26,7 +26,10 @@ Status: implemented
   也会在 shell 字面量中正确转义。
 - 原生 PTY 编译完成后，只暂存启动所需的运行时文件：非 Windows 平台去除
   Node 符号，删除 Node 头文件、share 与 npm 工具，并删除 DSH 运行时中的
-  TypeScript 源文件、声明和 source map。
+  TypeScript 源文件、声明和 source map。剥离 macOS arm64 的 Node 会使强制
+  代码签名失效，因此暂存会对其做 ad-hoc 重签——该行为由
+  [剥离后重签](../../bug-fix/2026-08-25-staged-node-resign-after-strip.md)
+  决策拥有。
 
 ## 考虑过的替代方案
 
