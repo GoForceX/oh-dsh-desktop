@@ -26,6 +26,11 @@ npm 插件。Oh-DSH 需要为一个自带完整 DSH 插件构建体系的外部�
 - 通过根目录和 `web/` 的 `cordis.patch.yml` insert 行挂载到 Desktop 与 Web；列入
   `BUNDLED_DESKTOP_CLIENT_PLUGINS`，让 runtime snapshot 与 smoke 套件断言客户端
   图注册。TUI 排除：插件围绕交互式面板构建，上游维护者不面向 TUI。
+- Nix 组装以插件的 npm 发布包替换子模块（`upstream/dsh-context` 取自
+  registry.npmjs.org，与 TUI renderer 相同模式）而非在沙箱内构建；
+  `register-plugins.py` 从 bundle 的 `context/` 目录为 full 与 web 面注册它，
+  保留上游 `lib/` 布局。构建 helper 把"无 git 元数据且已有预构建
+  `lib/index.js`"的检出视为无需构建。
 - host 的 import（`@deepseek-ai/dsh-session`、`dsh-settings`、
   `@deepseek-ai/schemastery`、`zod`）经由暂存运行时的 hoisted 树解析；不引入
   适配 manifest 或依赖镜像。也正因如此，Windows 依赖 deploy 只对声明了运行时

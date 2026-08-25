@@ -17,9 +17,9 @@ const stamp = join(root, '.cache', 'dsh-context-compile.stamp')
 
 function currentRevision() {
   const result = spawnSync('git', ['-C', contextDir, 'rev-parse', 'HEAD'], { encoding: 'utf8' })
-  if (result.status !== 0) {
-    throw new Error(`cannot resolve upstream/dsh-context revision: ${result.stderr}`)
-  }
+  // A release layout (the Nix assembly substitutes the npm tarball) has no
+  // .git; the caller treats null as "prebuilt, nothing to build".
+  if (result.status !== 0) return null
   return result.stdout.trim()
 }
 
@@ -60,7 +60,13 @@ try {
 }
 // Never process.exit() here: scripts/build.mjs imports this module, and an
 // early exit would kill the whole root build and leave dist/ stale.
-if (stamped !== revision || !existsSync(libEntry)) {
+if (revision === null) {
+  // Release layout: the sandboxed Nix build cannot run pnpm at all, so the
+  // assembly substitutes the prebuilt npm release.
+  if (!existsSync(libEntry)) {
+    throw new Error('upstream/dsh-context has no git checkout and no prebuilt lib/index.js')
+  }
+} else if (stamped !== revision || !existsSync(libEntry)) {
   // --ignore-workspace keeps this an isolated install of the submodule's own
   // pinned lockfile; without it pnpm may resolve the parent workspace
   // instead and skip the submodule's toolchain entirely.

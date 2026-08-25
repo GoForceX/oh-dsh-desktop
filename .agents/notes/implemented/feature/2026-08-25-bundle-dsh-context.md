@@ -33,6 +33,12 @@ that already ships a complete DSH plugin build of its own.
   snapshot and the smoke suites assert the client graph enrollment. TUI is
   excluded: the plugin is built around interactive panels and the upstream
   maintainer does not target TUI.
+- The Nix assembly substitutes the plugin's npm release tarball
+  (`upstream/dsh-context` from registry.npmjs.org, same pattern as the TUI
+  renderer) instead of building in the sandbox; `register-plugins.py`
+  enrolls it for the full and web surfaces from the bundle's `context/` dir,
+  keeping the upstream `lib/` layout. The build helper treats a checkout
+  without git metadata and with a prebuilt `lib/index.js` as nothing to do.
 - Host imports (`@deepseek-ai/dsh-session`, `dsh-settings`,
   `@deepseek-ai/schemastery`, `zod`) resolve through the staged runtime's
   hoisted tree; no adapter manifest or dependency mirroring is introduced.

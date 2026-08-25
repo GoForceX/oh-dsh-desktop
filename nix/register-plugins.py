@@ -37,8 +37,8 @@ def main():
         "liangshen": os.path.join("plugins", "liangshen"),
     }
     selected = {
-        "full": set(plugin_dirs) | {"tui-renderer"},
-        "web": {"web", "skins", "sidebar", "panel-controls", "pinned-summary", "better-sidebar-runtime", "vision", "liangshen"},
+        "full": set(plugin_dirs) | {"tui-renderer", "dsh-context"},
+        "web": {"web", "skins", "sidebar", "panel-controls", "pinned-summary", "better-sidebar-runtime", "vision", "liangshen", "dsh-context"},
         "tui": {"tui", "tui-renderer", "skins", "vision"},
     }.get(surface)
     if selected is None:
@@ -64,6 +64,20 @@ def main():
             f.write("\n")
 
         deps_link = os.path.join(package_dir, "node_modules")
+        if plugin_key == "dsh-context":
+            # Prebuilt npm release: its files live beside the manifest in the
+            # bundle's context/ dir, keeping the upstream lib/ layout its
+            # package.json exports expect (not the dist/ layout).
+            src_base = os.path.join(bundle_root, "context")
+            for fname in os.listdir(src_base):
+                src = os.path.join(src_base, fname)
+                dst = os.path.join(package_dir, fname)
+                if os.path.isdir(src):
+                    shutil.copytree(src, dst)
+                else:
+                    shutil.copy2(src, dst)
+            os.symlink(node_modules, deps_link)
+            continue
         if plugin_key == "tui-renderer":
             # The renderer requires React 19 while the Web runtime carries
             # React 18. Keep its direct dependency graph package-local.

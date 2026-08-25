@@ -64,8 +64,12 @@ let
   betterSidebarSrc = pkgs.fetchFromGitHub {
     owner = "omdsh-dev";
     repo = "DSH-better-sidebar";
-    rev = "f0965e1d6157a3e06ed2f5c7775a64428d5d3c29";
-    hash = "sha256-4uu1StNBZTuM6BJV1498FReUWIKoTFla1OjBgIEJsnM=";
+    rev = "d9b8f15d9eab018742f97d67e54b2398504894cd";
+    hash = "sha256-TTct9byCf0UobE5E1BGPCSaqxCufvFN9zCgUTXy3wQY=";
+  };
+  contextRelease = pkgs.fetchurl {
+    url = "https://registry.npmjs.org/dsh-context/-/dsh-context-0.31.1.tgz";
+    hash = "sha512-AJMWAtYWMWj7ondprNWbLutXX9VpONEP2Vk6t1Gh5ZdzuHTc1u0pGGI2qRRKdjZBjVy3x9TgF5jgW2Mx1T89pg==";
   };
   tuiSrc = pkgs.fetchFromGitHub {
     owner = "ccch1mneyyy";
@@ -95,7 +99,7 @@ let
     cp -r ${cleanSource} $out
     chmod -R u+w $out
     mkdir -p $out/upstream
-    rm -rf $out/upstream/DSH-better-sidebar $out/upstream/dsh-TUI
+    rm -rf $out/upstream/DSH-better-sidebar $out/upstream/dsh-TUI $out/upstream/dsh-context
     cp -r ${betterSidebarSrc} $out/upstream/DSH-better-sidebar
     cp -r ${tuiSrc} $out/upstream/dsh-TUI
     chmod -R u+w $out/upstream/dsh-TUI
@@ -108,6 +112,12 @@ let
     mkdir -p $out/upstream/dsh-TUI-release
     tar -xzf ${tuiRelease} --strip-components=1 \
       -C $out/upstream/dsh-TUI-release
+    # The context insight plugin ships prebuilt from npm (same release layout
+    # the npm-pinned TUI renderer uses); scripts/build.mjs then sees a lib/
+    # already matching the pinned version and skips the sandboxed rebuild.
+    mkdir -p $out/upstream/dsh-context
+    tar -xzf ${contextRelease} --strip-components=1 \
+      -C $out/upstream/dsh-context
   '';
 
   ohDshBundle = pkgs.stdenv.mkDerivation rec {
@@ -158,6 +168,16 @@ let
       cp web/package.json $out/lib/oh-dsh/manifests/web.json
       cp upstream/dsh-TUI-release/package.json \
         $out/lib/oh-dsh/manifests/tui-renderer.json
+      cp upstream/dsh-context/package.json \
+        $out/lib/oh-dsh/manifests/dsh-context.json
+
+      # Carry the prebuilt context plugin (npm release layout: lib/ + patch +
+      # license) for registration into the runtime.
+      mkdir -p $out/lib/oh-dsh/context
+      cp -r upstream/dsh-context/lib $out/lib/oh-dsh/context/lib
+      cp upstream/dsh-context/cordis.patch.yml \
+        upstream/dsh-context/LICENSE \
+        $out/lib/oh-dsh/context/
 
       # Copy the pinned renderer and apply the guarded Oh-DSH adaptation.
       mkdir -p $out/lib/oh-dsh/tui-renderer
