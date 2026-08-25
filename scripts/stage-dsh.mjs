@@ -286,6 +286,16 @@ function stripNodeBinary() {
     return
   }
   console.log(`Stripped Node binary: ${executable}`)
+  // Stripping invalidates the mandatory arm64 code signature; without an
+  // ad-hoc re-sign macOS kills the staged Node on every launch.
+  if (process.platform === 'darwin') {
+    const signed = spawnSync('/usr/bin/codesign', ['--force', '--sign', '-', executable], { stdio: 'ignore' })
+    if (signed.error !== undefined || signed.status !== 0) {
+      console.log('Warning: codesign failed; the staged Node may be killed by macOS Gatekeeper')
+    } else {
+      console.log(`Re-signed stripped Node binary: ${executable}`)
+    }
+  }
 }
 
 function pruneNodeRuntime() {
