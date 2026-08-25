@@ -2,10 +2,12 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
-test('desktop win32 windows collapse title bar, menu bar, and strip into one row', () => {
+test('desktop chrome keeps platform title bars and panel controls distinct', () => {
   const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8')
   const client = readFileSync(new URL('../src/client.ts', import.meta.url), 'utf8')
   const contracts = readFileSync(new URL('../src/contracts.ts', import.meta.url), 'utf8')
+  const panelCss = readFileSync(new URL('../plugins/sidebar/src/client/sidebar.css', import.meta.url), 'utf8')
+  const webPatch = readFileSync(new URL('../web/cordis.patch.yml', import.meta.url), 'utf8')
 
   // Windows uses a frameless native window; the renderer owns the single
   // chrome row and Electron still owns the BrowserWindow lifecycle.
@@ -18,15 +20,46 @@ test('desktop win32 windows collapse title bar, menu bar, and strip into one row
 
   assert.match(contracts, /export const DESKTOP_TITLEBAR_HEIGHT = 40/)
 
-  // The custom strip owns the drag region and its full row height.
-  assert.match(client, /padding-top: var\(--oh-dsh-titlebar-height\)/)
-  assert.match(client, /height: var\(--oh-dsh-titlebar-height\)/)
-  assert.match(client, /-webkit-app-region: drag/)
+  // Desktop publishes its platform to CSS. Only the hidden/frameless macOS
+  // and Windows variants reserve the in-page titlebar row; Linux keeps its
+  // native frame, while Web never loads the Desktop bridge or overrides.
+  assert.match(client, /installDesktopChrome\(bridge\.platform\)/)
+  assert.match(client, /dataset\.ohDshDesktopPlatform = platform/)
+  assert.match(
+    client,
+    /data-oh-dsh-desktop-platform='darwin'\] body,[\s\S]*?data-oh-dsh-desktop-platform='win32'\] body \{[\s\S]*?padding-top: var\(--oh-dsh-titlebar-height\);[\s\S]*?border-radius: 14px/,
+  )
+  assert.doesNotMatch(client, /data-oh-dsh-desktop-platform='linux'[\s\S]*?padding-top:/)
+  assert.doesNotMatch(client, /data-oh-dsh-desktop='true'\] body \{[\s\S]*?border-radius:/)
+  assert.doesNotMatch(webPatch, /@oh-dsh\/desktop'/)
+
+  // macOS gets a real drag island between traffic lights and panel controls.
+  assert.match(client, /if \(platform === 'darwin'\)[\s\S]*?oh-dsh-titlebar-drag-region/)
+  assert.match(client, /dragRegion\?\.remove\(\)/)
+  assert.match(client, /delete document\.documentElement\.dataset\.ohDshDesktopPlatform/)
+  assert.match(
+    client,
+    /data-oh-dsh-desktop-platform='darwin'\] \.oh-dsh-titlebar-drag-region \{[\s\S]*?left: 88px;[\s\S]*?right: 112px;[\s\S]*?-webkit-app-region: drag/,
+  )
+
+  // Web and framed Linux keep the shared top-right position. macOS uses a
+  // compact, evenly inset toolbar; only frameless Windows reserves space for
+  // its three custom window actions.
+  assert.match(panelCss, /\.oh-dsh-panel-toolbar \{[\s\S]*?top: 5px;[\s\S]*?right: 14px;/)
+  assert.match(
+    client,
+    /data-oh-dsh-desktop-platform='darwin'\] \.oh-dsh-panel-toolbar,[\s\S]*?data-oh-dsh-desktop-platform='win32'\] \.oh-dsh-panel-toolbar \{[\s\S]*?top: 4px;[\s\S]*?padding: 1px/,
+  )
+  assert.match(
+    client,
+    /data-oh-dsh-desktop-platform='darwin'\] \.oh-dsh-panel-toolbar button,[\s\S]*?data-oh-dsh-desktop-platform='win32'\] \.oh-dsh-panel-toolbar button \{[\s\S]*?width: 28px;[\s\S]*?height: 28px/,
+  )
+  assert.match(client, /data-oh-dsh-desktop-platform='darwin'\] \.oh-dsh-panel-toolbar \{[\s\S]*?right: 8px/)
+  assert.match(client, /data-oh-dsh-desktop-platform='win32'\] \.oh-dsh-panel-toolbar \{[\s\S]*?right: 154px/)
   assert.match(client, /\.oh-dsh-window-actions \{[\s\S]*?height: var\(--oh-dsh-titlebar-height\)/)
   assert.match(client, /body\[data-ds-dark-theme\] \.oh-dsh-menubar-brand img[\s\S]*?filter: brightness\(0\) invert\(1\)/)
   assert.match(client, /body::before \{[\s\S]*?z-index: 2147483645[\s\S]*?pointer-events: none/)
   assert.match(client, /\.oh-dsh-menubar \{[\s\S]*?z-index: 2147483646/)
-  assert.match(client, /\.oh-dsh-panel-toolbar \{[\s\S]*?z-index: 2147483647[\s\S]*?right: 154px[\s\S]*?-webkit-app-region: no-drag/)
   assert.match(client, /button\[data-action='minimize'\]::before \{[\s\S]*?top: 50%;[\s\S]*?width: 10px[\s\S]*?border-top: 1\.7px solid currentColor/)
   assert.match(client, /button\[data-action='maximize'\]::before \{[\s\S]*?width: 10px[\s\S]*?height: 10px[\s\S]*?border: 1\.7px solid currentColor/)
   assert.match(client, /button\[data-action='maximize'\]::before \{[\s\S]*?border-radius: 2px/)

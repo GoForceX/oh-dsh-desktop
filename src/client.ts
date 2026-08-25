@@ -36,11 +36,13 @@ declare global {
 }
 
 const DESKTOP_CHROME_CSS = `
-html[data-oh-dsh-desktop='true'] {
+html[data-oh-dsh-desktop-platform='darwin'],
+html[data-oh-dsh-desktop-platform='win32'] {
   --oh-dsh-titlebar-height: ${DESKTOP_TITLEBAR_HEIGHT}px;
 }
 
-html[data-oh-dsh-desktop='true'] body {
+html[data-oh-dsh-desktop-platform='darwin'] body,
+html[data-oh-dsh-desktop-platform='win32'] body {
   box-sizing: border-box;
   padding-top: var(--oh-dsh-titlebar-height);
   border: 1px solid var(--dsw-alias-border-l1);
@@ -48,7 +50,8 @@ html[data-oh-dsh-desktop='true'] body {
   overflow: hidden;
 }
 
-html[data-oh-dsh-desktop='true'] body::before {
+html[data-oh-dsh-desktop-platform='darwin'] body::before,
+html[data-oh-dsh-desktop-platform='win32'] body::before {
   content: '';
   position: fixed;
   z-index: 2147483645;
@@ -62,12 +65,38 @@ html[data-oh-dsh-desktop='true'] body::before {
   user-select: none;
 }
 
-/* Keep the panel toolbar clear of the Windows window-controls overlay. */
-html[data-oh-dsh-desktop='true'] .oh-dsh-panel-toolbar {
+html[data-oh-dsh-desktop-platform='darwin'] .oh-dsh-titlebar-drag-region {
+  position: fixed;
+  z-index: 2147483646;
+  top: 0;
+  left: 88px;
+  right: 112px;
+  height: var(--oh-dsh-titlebar-height);
+  user-select: none;
+  -webkit-app-region: drag;
+}
+
+html[data-oh-dsh-desktop-platform='darwin'] .oh-dsh-panel-toolbar,
+html[data-oh-dsh-desktop-platform='win32'] .oh-dsh-panel-toolbar {
   z-index: 2147483647;
   top: 4px;
-  right: 154px;
+  padding: 1px;
   -webkit-app-region: no-drag;
+}
+
+html[data-oh-dsh-desktop-platform='darwin'] .oh-dsh-panel-toolbar button,
+html[data-oh-dsh-desktop-platform='win32'] .oh-dsh-panel-toolbar button {
+  width: 28px;
+  height: 28px;
+}
+
+html[data-oh-dsh-desktop-platform='darwin'] .oh-dsh-panel-toolbar {
+  right: 8px;
+}
+
+/* Keep the panel toolbar clear of the Windows window actions. */
+html[data-oh-dsh-desktop-platform='win32'] .oh-dsh-panel-toolbar {
+  right: 154px;
 }
 
 /* In-page menu bar: fills the blank strip corner on Windows with the real
@@ -342,17 +371,27 @@ const DESKTOP_SHELL_MESSAGES: LocaleMessages<DesktopShellMessage> = {
   },
 }
 
-function installDesktopChrome(): () => void {
+function installDesktopChrome(platform: NodeJS.Platform): () => void {
   const originalTitle = document.title
   const style = document.createElement('style')
   style.dataset.ohDshDesktopChrome = 'true'
   style.textContent = DESKTOP_CHROME_CSS
   document.head.append(style)
   document.documentElement.dataset.ohDshDesktop = 'true'
+  document.documentElement.dataset.ohDshDesktopPlatform = platform
+  let dragRegion: HTMLDivElement | undefined
+  if (platform === 'darwin') {
+    dragRegion = document.createElement('div')
+    dragRegion.className = 'oh-dsh-titlebar-drag-region'
+    dragRegion.setAttribute('aria-hidden', 'true')
+    document.body.append(dragRegion)
+  }
   document.title = 'Oh-DSH Desktop'
   return () => {
+    dragRegion?.remove()
     style.remove()
     delete document.documentElement.dataset.ohDshDesktop
+    delete document.documentElement.dataset.ohDshDesktopPlatform
     document.title = originalTitle
   }
 }
@@ -645,7 +684,7 @@ export function apply(ctx: ClientContext): void {
         plugin: previewPluginId,
       })
     }
-    const removeDesktopChrome = installDesktopChrome()
+    const removeDesktopChrome = installDesktopChrome(bridge.platform)
     const removeHeroBranding = installHeroBranding()
     const unsubscribeLocale = locale.subscribe(renderPreviewLabel)
     let removeMenuBar: (() => void) | undefined
