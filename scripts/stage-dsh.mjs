@@ -37,6 +37,7 @@ import {
 } from './landlock-launcher.mjs'
 import { resolveNodeDistributionPlatform } from '../src/node-platform.ts'
 import {
+  adaptDshLiangshenOwnership,
   adaptDshLiangshenPresentation,
   adaptTuiLiangshenPresentation,
 } from '../plugins/liangshen/src/upstream-adapter.mjs'
@@ -1406,6 +1407,7 @@ restoreExecutableHelpers()
 console.log('Normalizing runtime links')
 normalizeRuntimeLinks()
 restoreSettingsBoundary(runtime)
+adaptDshLiangshenOwnership(runtime)
 if (stageSurface !== 'tui') adaptDshLiangshenPresentation(runtime)
 ensureLinuxLandlockLauncher()
 assertSelfContained(runtime, 'DSH runtime')

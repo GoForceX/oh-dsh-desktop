@@ -207,6 +207,7 @@ try {
   assert.equal(agentPresetBundleResponse.status, 200)
   assert.match(agentPresetBundle, /presetLiangshenName/)
   assert.match(agentPresetBundle, /Liangshen mode/)
+  assert.match(agentPresetBundle, /preset\.managedBy/)
 
   const loaded = []
   for (const pluginId of [

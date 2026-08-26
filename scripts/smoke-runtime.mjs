@@ -11,7 +11,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import electronBinary from 'electron'
 import { DSH_SOURCE_SPEC } from './dsh-source.mjs'
 import { bundledRuntimePaths, runtimeSearchPath } from '../src/runtime-paths.ts'
@@ -151,6 +151,43 @@ try {
     'liangshen',
     'agent.cordis.yml',
   )), 'Desktop Liangshen plugin did not install its preset')
+  const agentPresetModule = await import(pathToFileURL(join(
+    resources,
+    'dsh-runtime',
+    'node_modules',
+    '@deepseek-ai',
+    'dsh-agent-presets',
+    'lib',
+    'index.js',
+  )).href)
+  const managedRoster = await agentPresetModule.discoverPresets([{
+    path: join(dshHome, '.agent-presets'),
+    trust: 'user',
+  }])
+  const managedLiangshen = managedRoster.find(preset => preset.id === 'liangshen')
+  assert.equal(managedLiangshen?.managedBy, '@deepseek-harness-tui/dsh-tui')
+
+  const unmanagedRoot = join(smokeRoot, 'unmanaged-presets')
+  const unmanagedLiangshen = join(unmanagedRoot, 'liangshen')
+  mkdirSync(unmanagedLiangshen, { recursive: true })
+  writeFileSync(join(unmanagedLiangshen, 'agent.cordis.yml'), '[]\n')
+  writeFileSync(join(unmanagedLiangshen, 'preset.yml'), [
+    'name: 梁神模式',
+    'description: 主 Agent 与子 Agent 首轮均保持 Minimal 双工具，首次工具调用后开放完整目录，压缩后重新锚定。',
+    '',
+  ].join('\n'))
+  const unmanagedRoster = await agentPresetModule.discoverPresets([{
+    path: unmanagedRoot,
+    trust: 'user',
+  }])
+  assert.equal(unmanagedRoster[0]?.trust, 'user')
+  assert.equal(unmanagedRoster[0]?.name, '梁神模式')
+  assert.equal(
+    unmanagedRoster[0]?.description,
+    '主 Agent 与子 Agent 首轮均保持 Minimal 双工具，首次工具调用后开放完整目录，压缩后重新锚定。',
+  )
+  assert.equal(unmanagedRoster[0]?.managedBy, undefined)
+
   const indexResponse = await fetch(base)
   const index = await indexResponse.text()
   assert.equal(indexResponse.status, 200)
@@ -166,6 +203,7 @@ try {
   assert.equal(agentPresetBundleResponse.status, 200)
   assert.match(agentPresetBundle, /presetLiangshenName/)
   assert.match(agentPresetBundle, /Liangshen mode/)
+  assert.match(agentPresetBundle, /preset\.managedBy/)
 
   const loaded = []
   for (const pluginId of BUNDLED_DESKTOP_CLIENT_PLUGINS) {

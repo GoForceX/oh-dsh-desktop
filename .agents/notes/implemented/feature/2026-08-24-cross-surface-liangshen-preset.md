@@ -20,12 +20,14 @@ English locale still rendered the Chinese Liangshen name and description.
 - Add an Oh-DSH `@oh-dsh/liangshen` Host plugin to the Web and Desktop bundle
   patches. The plugin installs the pinned `presets/liangshen` composition into
   the shared user preset root before sessions are created.
-- Localize only a roster row whose id, name, and description exactly match the
-  pinned Liangshen metadata. A user-authored row, including another row using
-  the `liangshen` id, keeps the text it published.
-- Adapt the pinned DSH Agent-preset client for Web/Desktop and the compiled
-  dsh-TUI roster projection for TUI. Both resolve the Liangshen name and
-  description from the active locale without rewriting preset files.
+- Project the package-owned `.dsh-tui-managed.json` owner through the DSH
+  roster and `agentPreset.list` as `managedBy`. Localize only a row whose
+  owner, id, name, and description match the pinned Liangshen preset. A
+  user-authored row, including one that copies the canonical display text but
+  carries no management marker, keeps the text it published.
+- Adapt the pinned DSH Agent-preset roster, API, and client for Web/Desktop and
+  the compiled dsh-TUI roster projection for TUI. Both resolve the Liangshen
+  name and description from the active locale without rewriting preset files.
 - Apply the presentation adapters only to copied runtime packages in regular
   staging and Nix assembly. Exact, idempotent anchors make a DSH or dsh-TUI
   layout change fail packaging for review.
@@ -50,9 +52,10 @@ Web/Desktop plugin requested by the product boundary. Giving that root
 precedence would also shadow an unmanaged user preset that already owns the
 `liangshen` id, replacing the existing conflict-preservation behavior.
 
-**Translate every row named `liangshen`.** Rejected because an unmanaged user
-preset may legitimately use that id; replacing its published name and
-description would misrepresent user-owned code as the managed composition.
+**Infer ownership from the `liangshen` id or canonical display text.** Rejected
+because an unmanaged user preset may legitimately retain either; replacing its
+published name and description would misrepresent user-owned code as the
+managed composition.
 
 **Add locale maps to `preset.yml`.** Rejected because the pinned
 `dsh-agent-presets` metadata and API accept plain strings. Expanding that wire
@@ -73,13 +76,15 @@ backward compatible.
   plugin, while TUI continues to use dsh-TUI's native implementation. Both
   render `Liangshen mode` in English and `梁神模式` in Chinese.
 - Custom preset metadata remains literal, including a conflicting user-owned
-  `liangshen` row that the Host plugin refuses to replace.
+  `liangshen` row that retains the canonical Chinese display text but does not
+  carry the package-owned marker.
 - Surface-local staging includes the plugin only for Web and Desktop; TUI does
   not receive a duplicate Liangshen runtime package.
 - Nix Desktop/Web resolve the plugin package and its preset exactly like the
   staged (non-Nix) deployment, guarded by
   `tests/nix-register-plugins.test.ts`.
 - `tests/liangshen.test.ts`, `tests/tui.test.ts`, and the Desktop/Web smoke
-  checks pin the canonical-metadata guard and the served client bundles.
+  checks pin the marker-derived ownership field, canonical-metadata guard, and
+  served client bundles.
 - A DSH or dsh-TUI upgrade must revalidate the presentation anchors, preset
   composition, and cross-surface staged copy.

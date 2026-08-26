@@ -7,6 +7,8 @@ const LIANGSHEN_METADATA = {
   name: '梁神模式',
   description: '主 Agent 与子 Agent 首轮均保持 Minimal 双工具，首次工具调用后开放完整目录，压缩后重新锚定。',
 }
+const LIANGSHEN_OWNER = '@deepseek-harness-tui/dsh-tui'
+const LIANGSHEN_MARKER = '.dsh-tui-managed.json'
 
 const LIANGSHEN_MESSAGES = {
   en: {
@@ -16,7 +18,7 @@ const LIANGSHEN_MESSAGES = {
   zh: {
     name: LIANGSHEN_METADATA.name,
     description: LIANGSHEN_METADATA.description,
-  }
+  },
 }
 
 function replaceRequired(source, before, after, path) {
@@ -38,12 +40,114 @@ function patchFile(path, replacements) {
 }
 
 /**
+ * Carry the managed-preset marker through the pinned Host roster and API.
+ * Display strings stay ordinary user metadata; only the package-owned marker
+ * can authorize the downstream presentation adapters.
+ */
+export function adaptDshLiangshenOwnership(runtimeRoot) {
+  const rosterPath = dshPackageFilePath(
+    runtimeRoot,
+    'dsh-agent-presets',
+    'lib',
+    'index.js',
+  )
+  const apiPath = dshPackageFilePath(
+    runtimeRoot,
+    'dsh-host-apiproxy',
+    'lib',
+    'index.js',
+  )
+  for (const path of [rosterPath, apiPath]) {
+    if (!existsSync(path)) {
+      throw new Error(`Liangshen ownership adapter dependency is missing: ${path}`)
+    }
+  }
+
+  const metadataAnchor = 'const METADATA_FILE = "preset.yml";'
+  const scanAnchor = 'async function scanRoot(root) {'
+  const rosterAnchor = [
+    '\t\tconst metadata = await readPresetMetadata(directory);',
+    '\t\tfound.push({',
+    '\t\t\tid: child.name,',
+    '\t\t\ttrust: root.trust,',
+    '\t\t\tpath,',
+    '\t\t\t...metadata,',
+    '\t\t\t...broken === void 0 ? {} : { broken }',
+    '\t\t});',
+  ].join('\n')
+  patchFile(rosterPath, [
+    [metadataAnchor, [
+      metadataAnchor,
+      `const OH_DSH_LIANGSHEN_MARKER = ${JSON.stringify(LIANGSHEN_MARKER)};`,
+      `const OH_DSH_LIANGSHEN_OWNER = ${JSON.stringify(LIANGSHEN_OWNER)};`,
+    ].join('\n')],
+    [scanAnchor, [
+      'async function ohDshManagedPresetOwner(directory, id) {',
+      `\tif (id !== ${JSON.stringify(LIANGSHEN_METADATA.id)}) return void 0;`,
+      '\ttry {',
+      '\t\tconst marker = JSON.parse(await readFile(join(directory, OH_DSH_LIANGSHEN_MARKER), "utf8"));',
+      '\t\treturn typeof marker === "object" && marker !== null && !Array.isArray(marker)',
+      '\t\t\t&& marker.owner === OH_DSH_LIANGSHEN_OWNER && marker.preset === id',
+      '\t\t\t? marker.owner',
+      '\t\t\t: void 0;',
+      '\t} catch {',
+      '\t\treturn void 0;',
+      '\t}',
+      '}',
+      scanAnchor,
+    ].join('\n')],
+    [rosterAnchor, [
+      '\t\tconst metadata = await readPresetMetadata(directory);',
+      '\t\tconst managedBy = await ohDshManagedPresetOwner(directory, child.name);',
+      '\t\tfound.push({',
+      '\t\t\tid: child.name,',
+      '\t\t\ttrust: root.trust,',
+      '\t\t\tpath,',
+      '\t\t\t...managedBy === void 0 ? {} : { managedBy },',
+      '\t\t\t...metadata,',
+      '\t\t\t...broken === void 0 ? {} : { broken }',
+      '\t\t});',
+    ].join('\n')],
+  ])
+
+  const apiRosterAnchor = [
+    '\t\t\t\t\t\tid: preset.id,',
+    '\t\t\t\t\t\ttrust: preset.trust,',
+    '\t\t\t\t\t\tisDefault: preset.id === defaultId,',
+  ].join('\n')
+  const apiSchemaAnchor = [
+    '\tid: z$1.string().min(1),',
+    '\ttrust: z$1.union([z$1.literal("system"), z$1.literal("user")]),',
+    '\tisDefault: z$1.boolean(),',
+  ].join('\n')
+  patchFile(apiPath, [
+    [apiRosterAnchor, [
+      '\t\t\t\t\t\tid: preset.id,',
+      '\t\t\t\t\t\ttrust: preset.trust,',
+      '\t\t\t\t\t\t...preset.managedBy === void 0 ? {} : { managedBy: preset.managedBy },',
+      '\t\t\t\t\t\tisDefault: preset.id === defaultId,',
+    ].join('\n')],
+    [apiSchemaAnchor, [
+      '\tid: z$1.string().min(1),',
+      '\ttrust: z$1.union([z$1.literal("system"), z$1.literal("user")]),',
+      '\tmanagedBy: z$1.string().min(1).optional(),',
+      '\tisDefault: z$1.boolean(),',
+    ].join('\n')],
+  ])
+}
+
+/**
  * Adapt the pinned DSH browser preset renderer inside an assembled runtime.
  * Exact anchors make a DSH package change fail staging instead of silently
  * returning to mixed-language Liangshen copy.
  */
 export function adaptDshLiangshenPresentation(runtimeRoot) {
-  const path = dshAgentPresetClientPath(runtimeRoot)
+  const path = dshPackageFilePath(
+    runtimeRoot,
+    'dsh-client-ui-agent-preset',
+    'lib',
+    'client.js',
+  )
   if (!existsSync(path)) {
     throw new Error('dsh-client-ui-agent-preset is missing from the staged runtime')
   }
@@ -75,12 +179,23 @@ export function adaptDshLiangshenPresentation(runtimeRoot) {
       '\t\t\t}',
     ].join('\n')],
     [resolverAnchor, [
-      `\t\t\tconst isOhDshLiangshen = preset.id === ${JSON.stringify(LIANGSHEN_METADATA.id)}`,
+      `\t\t\tconst isOhDshLiangshen = preset.managedBy === ${JSON.stringify(LIANGSHEN_OWNER)}`,
+      `\t\t\t\t&& preset.id === ${JSON.stringify(LIANGSHEN_METADATA.id)}`,
       `\t\t\t\t&& preset.name === ${JSON.stringify(LIANGSHEN_METADATA.name)}`,
       `\t\t\t\t&& preset.description === ${JSON.stringify(LIANGSHEN_METADATA.description)};`,
       '\t\t\tconst keys = preset.trust === "system" || isOhDshLiangshen',
       '\t\t\t\t? BUILT_IN_PRESET_KEYS[preset.id]',
       '\t\t\t\t: void 0;',
+    ].join('\n')],
+    [[
+      '\t\t\t\tid: preset.id,',
+      '\t\t\t\ttrust: preset.trust,',
+      '\t\t\t\t...preset.name === void 0 ? {} : { name: preset.name },',
+    ].join('\n'), [
+      '\t\t\t\tid: preset.id,',
+      '\t\t\t\ttrust: preset.trust,',
+      '\t\t\t\t...preset.managedBy === void 0 ? {} : { managedBy: preset.managedBy },',
+      '\t\t\t\t...preset.name === void 0 ? {} : { name: preset.name },',
     ].join('\n')],
   ])
 }
@@ -112,7 +227,8 @@ export function adaptTuiLiangshenPresentation(packageDir) {
     ].join('\n')
   const channelReplacement = [
       '                return list.map(preset => {',
-      `                    const isOhDshLiangshen = preset.id === ${JSON.stringify(LIANGSHEN_METADATA.id)}`,
+      `                    const isOhDshLiangshen = preset.managedBy === ${JSON.stringify(LIANGSHEN_OWNER)}`,
+      `                        && preset.id === ${JSON.stringify(LIANGSHEN_METADATA.id)}`,
       `                        && preset.name === ${JSON.stringify(LIANGSHEN_METADATA.name)}`,
       `                        && preset.description === ${JSON.stringify(LIANGSHEN_METADATA.description)};`,
       '                    return {',
@@ -129,27 +245,19 @@ export function adaptTuiLiangshenPresentation(packageDir) {
   patchFile(channelPath, [[channelAnchor, channelReplacement]])
 }
 
-/** Resolve the pinned DSH browser bundle in pnpm or hoisted deployments. */
-function dshAgentPresetClientPath(runtimeRoot) {
-  const hoisted = join(
-    runtimeRoot,
+/** Resolve one pinned DSH package file in pnpm or hoisted deployments. */
+function dshPackageFilePath(runtimeRoot, packageName, ...segments) {
+  const packagePath = join(
     'node_modules',
     '@deepseek-ai',
-    'dsh-client-ui-agent-preset',
-    'lib',
-    'client.js',
+    packageName,
+    ...segments,
   )
+  const hoisted = join(runtimeRoot, packagePath)
   if (existsSync(hoisted)) return hoisted
 
   const store = join(runtimeRoot, 'node_modules', '.pnpm')
   if (existsSync(store)) {
-    const packagePath = join(
-      'node_modules',
-      '@deepseek-ai',
-      'dsh-client-ui-agent-preset',
-      'lib',
-      'client.js',
-    )
     const entry = readdirSync(store, { withFileTypes: true })
       .find(candidate => candidate.isDirectory()
         && existsSync(join(store, candidate.name, packagePath)))
@@ -166,9 +274,10 @@ const invokedPath = process.argv[1] === undefined
 if (invokedPath === import.meta.url) {
   const [surface, target] = process.argv.slice(2)
   if (target === undefined || process.argv.length !== 4) {
-    throw new Error('usage: node upstream-adapter.mjs <dsh|tui> <runtime-or-package-root>')
+    throw new Error('usage: node upstream-adapter.mjs <ownership|dsh|tui> <runtime-or-package-root>')
   }
-  if (surface === 'dsh') adaptDshLiangshenPresentation(resolve(target))
+  if (surface === 'ownership') adaptDshLiangshenOwnership(resolve(target))
+  else if (surface === 'dsh') adaptDshLiangshenPresentation(resolve(target))
   else if (surface === 'tui') adaptTuiLiangshenPresentation(resolve(target))
   else throw new Error(`unknown Liangshen presentation surface: ${String(surface)}`)
 }

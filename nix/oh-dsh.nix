@@ -282,6 +282,9 @@ pkgs.stdenv.mkDerivation {
     # anchors change.
     ${pkgs.nodejs_24}/bin/node ${../scripts/settings-boundary.mjs} \
       $out/dsh-runtime
+    ${pkgs.nodejs_24}/bin/node \
+      ${../plugins/liangshen/src/upstream-adapter.mjs} \
+      ownership $out/dsh-runtime
     ${lib.optionalString includesWeb ''
       ${pkgs.nodejs_24}/bin/node \
         ${../plugins/liangshen/src/upstream-adapter.mjs} \

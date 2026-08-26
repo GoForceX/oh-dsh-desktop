@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 import { apply, installLiangshenPreset } from '../plugins/liangshen/src/index.ts'
 import {
+  adaptDshLiangshenOwnership,
   adaptDshLiangshenPresentation,
   adaptTuiLiangshenPresentation,
 } from '../plugins/liangshen/src/upstream-adapter.mjs'
@@ -65,39 +66,70 @@ function requireFile(path: string): string {
   return readFileSync(path, 'utf8')
 }
 
-const AGENT_PRESET_CLIENT_PATH = join(
-  'node_modules',
-  '@deepseek-ai',
-  'dsh-client-ui-agent-preset',
-  'lib',
-  'client.js',
-)
-
-function pinnedAgentPresetClient(): string {
+function pinnedPackageFile(packageName: string, ...segments: string[]): string {
   const store = join(root, 'node_modules', '.pnpm')
+  const packagePath = join('node_modules', '@deepseek-ai', packageName, ...segments)
   const entry = readdirSync(store, { withFileTypes: true })
     .find(candidate => candidate.isDirectory()
-      && existsSync(join(store, candidate.name, AGENT_PRESET_CLIENT_PATH)))
-  assert.ok(entry, 'pinned dsh-client-ui-agent-preset package is unavailable')
-  return join(store, entry.name, AGENT_PRESET_CLIENT_PATH)
+      && existsSync(join(store, candidate.name, packagePath)))
+  assert.ok(entry, `pinned @deepseek-ai/${packageName} package is unavailable`)
+  return join(store, entry.name, packagePath)
 }
 
 test('Liangshen adapters localize the pinned browser and TUI preset renderers', () => {
   const temp = mkdtempSync(join(tmpdir(), 'oh-dsh-liangshen-presentation-'))
   try {
     const runtime = join(temp, 'runtime')
+    const agentPresetHost = join(
+      runtime,
+      'node_modules',
+      '.pnpm',
+      'agent-preset-host-hash',
+      'node_modules',
+      '@deepseek-ai',
+      'dsh-agent-presets',
+      'lib',
+      'index.js',
+    )
+    const apiProxyHost = join(
+      runtime,
+      'node_modules',
+      '.pnpm',
+      'api-proxy-host-hash',
+      'node_modules',
+      '@deepseek-ai',
+      'dsh-host-apiproxy',
+      'lib',
+      'index.js',
+    )
     const browserClient = join(
       runtime,
       'node_modules',
       '.pnpm',
       'virtual-store-hash',
-      AGENT_PRESET_CLIENT_PATH,
+      'node_modules',
+      '@deepseek-ai',
+      'dsh-client-ui-agent-preset',
+      'lib',
+      'client.js',
     )
-    mkdirSync(dirname(browserClient), { recursive: true })
-    cpSync(pinnedAgentPresetClient(), browserClient)
+    for (const path of [agentPresetHost, apiProxyHost, browserClient]) {
+      mkdirSync(dirname(path), { recursive: true })
+    }
+    cpSync(pinnedPackageFile('dsh-agent-presets', 'lib', 'index.js'), agentPresetHost)
+    cpSync(pinnedPackageFile('dsh-host-apiproxy', 'lib', 'index.js'), apiProxyHost)
+    cpSync(pinnedPackageFile('dsh-client-ui-agent-preset', 'lib', 'client.js'), browserClient)
+    adaptDshLiangshenOwnership(runtime)
     adaptDshLiangshenPresentation(runtime)
+    const hostSource = requireFile(agentPresetHost)
+    const apiSource = requireFile(apiProxyHost)
     const browserSource = requireFile(browserClient)
+    assert.match(hostSource, /ohDshManagedPresetOwner/)
+    assert.match(hostSource, /managedBy/)
+    assert.match(apiSource, /managedBy: preset\.managedBy/)
+    assert.match(apiSource, /managedBy: z\$1\.string/)
     assert.match(browserSource, /Liangshen mode/)
+    assert.match(browserSource, /preset\.managedBy === "@deepseek-harness-tui\/dsh-tui"/)
     assert.match(browserSource, /preset\.name === "梁神模式"/)
     assert.match(browserSource, /preset\.description === "主 Agent 与子 Agent/)
 
@@ -111,7 +143,7 @@ test('Liangshen adapters localize the pinned browser and TUI preset renderers', 
       'client.js',
     )
     mkdirSync(dirname(hoistedClient), { recursive: true })
-    cpSync(pinnedAgentPresetClient(), hoistedClient)
+    cpSync(pinnedPackageFile('dsh-client-ui-agent-preset', 'lib', 'client.js'), hoistedClient)
     adaptDshLiangshenPresentation(hoistedRuntime)
     assert.match(requireFile(hoistedClient), /Liangshen mode/)
 
@@ -125,9 +157,13 @@ test('Liangshen adapters localize the pinned browser and TUI preset renderers', 
     )
     adaptTuiLiangshenPresentation(tui)
     assert.match(requireFile(join(tuiTypes, 'i18n.js')), /Liangshen mode/)
-    assert.match(requireFile(join(tuiTypes, 'dsh-adapter', 'channel.js')), /isOhDshLiangshen/)
+    assert.match(
+      requireFile(join(tuiTypes, 'dsh-adapter', 'channel.js')),
+      /preset\.managedBy === "@deepseek-harness-tui\/dsh-tui"/,
+    )
 
     assert.doesNotThrow(() => {
+      adaptDshLiangshenOwnership(runtime)
       adaptDshLiangshenPresentation(runtime)
       adaptDshLiangshenPresentation(hoistedRuntime)
       adaptTuiLiangshenPresentation(tui)
@@ -139,8 +175,9 @@ test('Liangshen adapters localize the pinned browser and TUI preset renderers', 
 
 test('Nix applies Liangshen presentation adapters to its copied runtimes', () => {
   const nix = requireFile(join(root, 'nix', 'oh-dsh.nix'))
-  assert.equal((nix.match(/plugins\/liangshen\/src\/upstream-adapter\.mjs/g) ?? []).length, 2)
+  assert.equal((nix.match(/plugins\/liangshen\/src\/upstream-adapter\.mjs/g) ?? []).length, 3)
   assert.match(nix, /tui-renderer/)
+  assert.match(nix, /ownership \$out\/dsh-runtime/)
   assert.match(nix, /dsh \$out\/dsh-runtime/)
 })
 
