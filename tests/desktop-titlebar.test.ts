@@ -68,6 +68,20 @@ test('desktop chrome keeps platform title bars and panel controls distinct', () 
   assert.match(client, /button\[data-action='close'\]::before,[\s\S]*?left: 18px[\s\S]*?width: 10px/)
 })
 
+test('desktop marketplace remains available in read-only viewer mode', () => {
+  const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8')
+
+  assert.match(
+    main,
+    /function createPluginMarketplace\(\): PluginMarketplaceManager \{[\s\S]*?if \(!desktopReadOnly\) ensureDesktopProfile\(info\.dshHome\)[\s\S]*?if \(!desktopReadOnly\) mkdirSync\(workingDirectory, \{ recursive: true, mode: 0o700 \}\)[\s\S]*?desktopReadOnly \? \{ readOnly: true \} : \{\}/,
+  )
+  assert.match(
+    main,
+    /desktopReadOnly \? \{ cacheReadOnly: true \} : \{ cwd: workingDirectory \}/,
+  )
+  assert.doesNotMatch(main, /function createPluginMarketplace\(\): PluginMarketplaceManager \| undefined \{[\s\S]*?if \(desktopReadOnly\) return undefined/)
+})
+
 test('desktop win32 menu bar renders in the merged row but pops the native menu', () => {
   const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8')
   const client = readFileSync(new URL('../src/client.ts', import.meta.url), 'utf8')
