@@ -143,19 +143,18 @@ function dshAgentPresetClientPath(runtimeRoot) {
 
   const store = join(runtimeRoot, 'node_modules', '.pnpm')
   if (existsSync(store)) {
+    const packagePath = join(
+      'node_modules',
+      '@deepseek-ai',
+      'dsh-client-ui-agent-preset',
+      'lib',
+      'client.js',
+    )
     const entry = readdirSync(store, { withFileTypes: true })
       .find(candidate => candidate.isDirectory()
-        && candidate.name.startsWith('@deepseek-ai+dsh-client-ui-agent-preset@'))
+        && existsSync(join(store, candidate.name, packagePath)))
     if (entry !== undefined) {
-      return join(
-        store,
-        entry.name,
-        'node_modules',
-        '@deepseek-ai',
-        'dsh-client-ui-agent-preset',
-        'lib',
-        'client.js',
-      )
+      return join(store, entry.name, packagePath)
     }
   }
   return hoisted

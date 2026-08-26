@@ -65,21 +65,21 @@ function requireFile(path: string): string {
   return readFileSync(path, 'utf8')
 }
 
+const AGENT_PRESET_CLIENT_PATH = join(
+  'node_modules',
+  '@deepseek-ai',
+  'dsh-client-ui-agent-preset',
+  'lib',
+  'client.js',
+)
+
 function pinnedAgentPresetClient(): string {
   const store = join(root, 'node_modules', '.pnpm')
   const entry = readdirSync(store, { withFileTypes: true })
     .find(candidate => candidate.isDirectory()
-      && candidate.name.startsWith('@deepseek-ai+dsh-client-ui-agent-preset@'))
+      && existsSync(join(store, candidate.name, AGENT_PRESET_CLIENT_PATH)))
   assert.ok(entry, 'pinned dsh-client-ui-agent-preset package is unavailable')
-  return join(
-    store,
-    entry.name,
-    'node_modules',
-    '@deepseek-ai',
-    'dsh-client-ui-agent-preset',
-    'lib',
-    'client.js',
-  )
+  return join(store, entry.name, AGENT_PRESET_CLIENT_PATH)
 }
 
 test('Liangshen adapters localize the pinned browser and TUI preset renderers', () => {
@@ -90,12 +90,8 @@ test('Liangshen adapters localize the pinned browser and TUI preset renderers', 
       runtime,
       'node_modules',
       '.pnpm',
-      '@deepseek-ai+dsh-client-ui-agent-preset@fixture',
-      'node_modules',
-      '@deepseek-ai',
-      'dsh-client-ui-agent-preset',
-      'lib',
-      'client.js',
+      'virtual-store-hash',
+      AGENT_PRESET_CLIENT_PATH,
     )
     mkdirSync(dirname(browserClient), { recursive: true })
     cpSync(pinnedAgentPresetClient(), browserClient)
