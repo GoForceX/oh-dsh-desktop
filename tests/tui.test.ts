@@ -15,6 +15,7 @@ import type { Readable } from 'node:stream'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { TUI_BUNDLES, TUI_PROFILE } from '../src/profile.ts'
+import { adaptTuiLiangshenPresentation } from '../plugins/liangshen/src/upstream-adapter.mjs'
 import { adaptTuiRendererPackage } from '../scripts/tui-upstream-adapter.mjs'
 import {
   DEFAULT_TUI_HOME,
@@ -185,6 +186,7 @@ test('TUI upstream adapter removes legacy terminal branding and scopes storage',
   })
   try {
     adaptTuiRendererPackage(root)
+    adaptTuiLiangshenPresentation(root)
     const paths = readFileSync(join(lib, 'utils', 'paths.js'), 'utf8')
     assert.match(paths, /OH_DSH_TUI_CONFIG_HOME/)
     assert.match(paths, /LEGACY_DATA_DIR = DATA_DIR/)
@@ -238,8 +240,11 @@ test('TUI upstream adapter removes legacy terminal branding and scopes storage',
     const messages = readFileSync(join(lib, 'i18n.js'), 'utf8')
     assert.match(messages, /~\/\.ohdsh\/tui/)
     assert.doesNotMatch(messages, /dsh-tui|~\/\.dsh-tui/)
+    assert.match(messages, /Liangshen mode/)
+    assert.match(messages, /preset-liangshen-description/)
     const channel = readFileSync(join(lib, 'dsh-adapter', 'channel.js'), 'utf8')
     assert.match(channel, /oh-dsh-tui-export-/)
+    assert.match(channel, /isOhDshLiangshen/)
     assert.doesNotMatch(
       channel,
       /const fileName = `dsh-tui-export-|join\(userHome, '\.dsh-tui\//,
@@ -258,7 +263,10 @@ test('TUI upstream adapter removes legacy terminal branding and scopes storage',
     assert.doesNotMatch(customTheme, /\[dsh-tui\]|~\/\.dsh-tui/)
     const pluginStorage = readFileSync(join(lib, 'dsh-adapter', 'plugin-storage.js'), 'utf8')
     assert.doesNotMatch(pluginStorage, /~\/\.dsh-tui/)
-    assert.doesNotThrow(() => { adaptTuiRendererPackage(root) })
+    assert.doesNotThrow(() => {
+      adaptTuiRendererPackage(root)
+      adaptTuiLiangshenPresentation(root)
+    })
   } finally {
     rmSync(root, { recursive: true, force: true })
   }
