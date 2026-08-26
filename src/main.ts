@@ -812,21 +812,22 @@ async function installLocalPlugin(): Promise<void> {
   }
 }
 
-function createPluginMarketplace(): PluginMarketplaceManager | undefined {
-  if (desktopReadOnly) return undefined
+function createPluginMarketplace(): PluginMarketplaceManager {
   const info = desktopInfo()
-  ensureDesktopProfile(info.dshHome)
+  if (!desktopReadOnly) ensureDesktopProfile(info.dshHome)
   const paths = runtimePaths()
   const workingDirectory = join(info.appDataPath, 'plugin-marketplace')
-  mkdirSync(workingDirectory, { recursive: true, mode: 0o700 })
+  if (!desktopReadOnly) mkdirSync(workingDirectory, { recursive: true, mode: 0o700 })
   const environment = runtimeEnvironment(paths)
   return new PluginMarketplaceManager({
     appDataPath: info.appDataPath,
     dshHome: info.dshHome,
+    ...(desktopReadOnly ? { readOnly: true } : {}),
     onWarn: line => { appendLog('desktop', `[marketplace] ${line}`) },
     platform: new ProductionMarketplacePlatform({
+      appDataPath: info.appDataPath,
       cliEntry: paths.cliEntry,
-      cwd: workingDirectory,
+      ...(desktopReadOnly ? { cacheReadOnly: true } : { cwd: workingDirectory }),
       env: environment,
       nodeBinary: paths.nodeBinary,
       pnpmEntry: paths.pnpmEntry,
