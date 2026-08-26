@@ -80,6 +80,15 @@ export function isProtectedMarketplacePlugin(
       && PROTECTED_PLUGIN_PACKAGES.has(packageName.toLowerCase()))
 }
 
+export interface MarketplaceRepositoryStats {
+  forks: number
+  language: string | null
+  license: string | null
+  openIssues: number
+  stars: number
+  updatedAt: string | null
+}
+
 export interface MarketplacePlugin {
   category: string
   description: string
@@ -93,6 +102,7 @@ export interface MarketplacePlugin {
   pushedAt: string | null
   repository: string
   runtimeRisk: MarketplaceRuntimeRisk
+  stats: MarketplaceRepositoryStats | null
   surfaces: MarketplaceSurfaceSupport
   tags: string[]
   title: string
@@ -182,6 +192,7 @@ export interface MarketplaceSnapshot {
 
 export type MarketplaceCommand =
   | { type: 'refresh'; force?: boolean }
+  | { type: 'load-repository-stats'; pluginId: string }
   | { type: 'inspect'; action: MarketplaceAction; pluginId: string }
   | { type: 'prepare'; action: MarketplaceAction; pluginId: string }
   | {
@@ -215,6 +226,12 @@ export function parseMarketplaceCommand(value: unknown): MarketplaceCommand {
     return value.force === undefined
       ? { type: 'refresh' }
       : { type: 'refresh', force: value.force }
+  }
+  if (value.type === 'load-repository-stats') {
+    if (typeof value.pluginId !== 'string' || value.pluginId === '') {
+      throw new Error('invalid marketplace repository stats command')
+    }
+    return { type: 'load-repository-stats', pluginId: value.pluginId }
   }
   if (value.type === 'discard' || value.type === 'apply' || value.type === 'undo') {
     return { type: value.type }

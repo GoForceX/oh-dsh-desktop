@@ -20,6 +20,12 @@ export type MarketplaceMessage =
   | 'category'
   | 'mechanism'
   | 'updated'
+  | 'stars'
+  | 'forks'
+  | 'open-issues'
+  | 'language'
+  | 'license'
+  | 'github-stats'
   | 'unknown'
   | 'repository'
   | 'surfaces'
@@ -123,6 +129,12 @@ export const MARKETPLACE_MESSAGES: LocaleMessages<MarketplaceMessage> = {
     category: 'Category',
     mechanism: 'Mechanism',
     updated: 'Updated',
+    stars: 'Stars',
+    forks: 'Forks',
+    'open-issues': 'Open issues',
+    language: 'Language',
+    license: 'License',
+    'github-stats': 'GitHub repository statistics',
     unknown: 'Unknown',
     repository: 'Repository',
     surfaces: 'Effective surfaces',
@@ -225,6 +237,12 @@ export const MARKETPLACE_MESSAGES: LocaleMessages<MarketplaceMessage> = {
     category: '分类',
     mechanism: '安装机制',
     updated: '更新时间',
+    stars: 'Stars',
+    forks: 'Forks',
+    'open-issues': '待处理 Issue',
+    language: '主要语言',
+    license: '许可证',
+    'github-stats': 'GitHub 仓库统计',
     unknown: '未知',
     repository: '仓库',
     surfaces: '生效界面',

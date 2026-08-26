@@ -5,6 +5,7 @@ import type {
   MarketplaceConfirmation,
   MarketplacePlugin,
 } from '../../plugin-marketplace/src/protocol.ts'
+import { marketplaceRepositoryStats } from '../../plugin-marketplace/src/client/repository-metadata.ts'
 import {
   type TuiMarketplaceController,
   surfaceMarker,
@@ -210,6 +211,7 @@ function renderDetail(
   if (preview !== null && preview !== undefined) actions.push('a=apply', 'n=discard')
   if (state.snapshot?.undoAvailable === true) actions.push('w=undo')
   actions.push('b=back')
+  const repositoryStats = marketplaceRepositoryStats(plugin).join(' · ')
   return h(Box, { flexDirection: 'column' },
     h(Text, { bold: true, inverse: true }, clip(` ${plugin.title} `, columns)),
     h(Text, { color: 'subtle' }, clip(
@@ -222,6 +224,9 @@ function renderDetail(
       `repository: ${plugin.url.replace('https://github.com/', '')}`,
       columns,
     )),
+    repositoryStats === ''
+      ? null
+      : h(Text, { color: 'subtle' }, clip(`GitHub: ${repositoryStats}`, columns)),
     plan === null
       ? null
       : h(Box, { marginTop: 1 }, h(Text, { color: 'warning' }, clip(

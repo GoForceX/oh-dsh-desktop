@@ -35,6 +35,10 @@ import {
   createMarketplaceHttpBridge,
   waitForMarketplaceRestart,
 } from '../plugins/plugin-marketplace/src/client/http.ts'
+import {
+  formatMarketplaceCount,
+  formatMarketplaceDate,
+} from '../plugins/plugin-marketplace/src/client/repository-metadata.ts'
 import type {
   MarketplacePreviewProxyContext,
 } from '../plugins/plugin-marketplace/src/host/preview-proxy.ts'
@@ -96,6 +100,15 @@ function catalogDocument(): unknown {
   }
 }
 
+test('repository metadata formatters handle compact counts and invalid dates', () => {
+  assert.equal(formatMarketplaceCount(1_250, 'en'), '1.3K')
+  assert.equal(formatMarketplaceCount(null), null)
+  assert.equal(formatMarketplaceCount(-1), null)
+  assert.equal(formatMarketplaceDate(null, 'en', 'Unknown'), 'Unknown')
+  assert.equal(formatMarketplaceDate('not-a-date', 'en', 'Unknown'), 'Unknown')
+  assert.notEqual(formatMarketplaceDate('2026-08-27T12:00:00Z', 'en', 'Unknown'), 'Unknown')
+})
+
 class FakePlatform implements MarketplacePlatform {
   readonly builds: Array<{
     checkout: string
@@ -124,6 +137,8 @@ class FakePlatform implements MarketplacePlatform {
   async cloneRepository(_repository: string, _commit: string, target: string): Promise<void> {
     mkdirSync(target, { recursive: true })
   }
+
+  async loadRepositoryStats(_repository: string): Promise<import('../plugins/plugin-marketplace/src/protocol.ts').MarketplaceRepositoryStats | null> { return null }
 
   async loadCatalog(options: LoadCatalogOptions = {}): Promise<unknown> {
     this.catalogLoads.push(options)
