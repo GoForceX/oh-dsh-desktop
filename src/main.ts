@@ -5,13 +5,17 @@ import {
   dialog,
   ipcMain,
   Menu,
+  nativeImage,
   nativeTheme,
   net,
   Notification,
+  screen,
   session,
   shell,
+  Tray,
   type IpcMainInvokeEvent,
   type MenuItemConstructorOptions,
+  type NativeImage,
 } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { createWriteStream, existsSync, mkdirSync, readFileSync, statSync, type WriteStream } from 'node:fs'
@@ -94,6 +98,8 @@ let logStream: WriteStream | undefined
 let updateWindow: BrowserWindow | undefined
 let updateManager: DesktopUpdateManager | undefined
 let runtimeUpdateManager: RuntimeUpdateManager | undefined
+let tray: Tray | undefined
+let trayHideNoticeShown = false
 let quittingForUpdate = false
 let quitting = false
 let transitioning = false
@@ -316,6 +322,21 @@ function brandIconDataUrl(): string | null {
   return `data:image/png;base64,${readFileSync(path).toString('base64')}`
 }
 
+function trayIconImage(): NativeImage | undefined {
+  // Packaged builds carry only the 512px window icon beside resources/;
+  // development has the rendered 16px set. The tray needs a small bitmap
+  // sized for the primary display, or Windows scales it blurry.
+  const packaged = join(process.resourcesPath, 'oh-dsh-desktop.png')
+  const development = join(currentDir, '..', 'assets', 'icons', '16x16.png')
+  const path = existsSync(packaged) ? packaged : existsSync(development) ? development : undefined
+  if (path === undefined) return undefined
+  const image = nativeImage.createFromPath(path)
+  if (image.isEmpty()) return undefined
+  const size = Math.max(16, Math.round(16 * screen.getPrimaryDisplay().scaleFactor))
+  const resized = image.resize({ height: size, width: size })
+  return resized.isEmpty() ? undefined : resized
+}
+
 function createWindow(options: { preview?: boolean; title?: string } = {}): BrowserWindow {
   const icon = windowIconPath()
   const window = new BrowserWindow({
@@ -348,6 +369,18 @@ function createWindow(options: { preview?: boolean; title?: string } = {}): Brow
   }
   window.on('maximize', sendWindowState)
   window.on('unmaximize', sendWindowState)
+  window.on('close', (event) => {
+    // With a tray alive, closing the main window hides it instead of
+    // quitting; preview windows and an already-running quit pass through.
+    // The tray only exists on win32, so macOS and Linux close unchanged.
+    if (options.preview === true || tray === undefined || quitting || quittingForUpdate) return
+    event.preventDefault()
+    window.hide()
+    if (!trayHideNoticeShown) {
+      trayHideNoticeShown = true
+      tray.displayBalloon({ iconType: 'info', title: PRODUCT_NAME, content: labels(menuLocale).trayNotice })
+    }
+  })
   window.on('closed', () => {
     if (mainWindow === window) mainWindow = undefined
     if (previewWindow === window) {
@@ -875,6 +908,8 @@ function labels(locale: OhDshLocale) {
     resetZoom: '重置缩放',
     settings: '设置…',
     selectAll: '全选',
+    show: '显示主窗口',
+    trayNotice: 'Oh-DSH 仍在系统托盘中运行，点击托盘图标可恢复窗口。要退出请使用托盘菜单中的“退出 Oh-DSH Desktop”。',
     toggleBottomPanel: '切换底部面板',
     toggleDevTools: '切换开发者工具',
     toggleFullscreen: '切换全屏',
@@ -922,6 +957,8 @@ function labels(locale: OhDshLocale) {
     resetZoom: 'Reset Zoom',
     settings: 'Settings…',
     selectAll: 'Select All',
+    show: 'Show Main Window',
+    trayNotice: 'Oh-DSH keeps running in the system tray. Click the tray icon to restore the window; use Quit in the tray menu to exit.',
     toggleBottomPanel: 'Toggle Bottom Panel',
     toggleDevTools: 'Toggle Developer Tools',
     toggleFullscreen: 'Toggle Full Screen',
@@ -945,6 +982,40 @@ function labels(locale: OhDshLocale) {
     sideChat: 'Side Chat',
     trajectory: 'Trajectory',
   }
+}
+
+function revealMainWindow(): void {
+  if (mainWindow !== undefined && !mainWindow.isDestroyed()) {
+    mainWindow.show()
+    mainWindow.focus()
+    return
+  }
+  mainWindow = createWindow()
+  if (runtimeUrl !== undefined) void mainWindow.loadURL(runtimeUrl.href).then(flushQueuedPaths)
+  else void showSplash({ error: true, message: 'DeepSeek Harness 未运行，请从“DSH”菜单重新启动。' })
+}
+
+function buildTrayMenu(): Menu {
+  const text = labels(menuLocale)
+  return Menu.buildFromTemplate([
+    { label: text.show, click: () => { revealMainWindow() } },
+    { type: 'separator' },
+    { label: text.quit, click: () => { app.quit() } },
+  ])
+}
+
+function createTray(): Tray | undefined {
+  // Close-to-tray is a Windows affordance; macOS and Linux keep their dock
+  // and close-quits behavior. A missing icon leaves the close behavior
+  // exactly as before instead of trapping a window with no tray.
+  if (process.platform !== 'win32') return undefined
+  const icon = trayIconImage()
+  if (icon === undefined) return undefined
+  const trayInstance = new Tray(icon)
+  trayInstance.setToolTip(PRODUCT_NAME)
+  trayInstance.setContextMenu(buildTrayMenu())
+  trayInstance.on('click', () => { revealMainWindow() })
+  return trayInstance
 }
 
 function buildMenu(locale: OhDshLocale = menuLocale): void {
@@ -1059,6 +1130,7 @@ function buildMenu(locale: OhDshLocale = menuLocale): void {
   ]
   applicationMenu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(applicationMenu)
+  tray?.setContextMenu(buildTrayMenu())
 }
 
 /** The native application menu, popped up by the in-page Windows menu bar. */
@@ -1269,23 +1341,23 @@ async function bootstrap(): Promise<void> {
   browserSession.setPermissionRequestHandler((_webContents, _permission, callback) => { callback(false) })
   browserSession.setPermissionCheckHandler(() => false)
   buildMenu(systemLocale())
+  tray = createTray()
   mainWindow = createWindow()
   await showSplash()
   const initialArguments = process.argv.slice(app.isPackaged ? 1 : 2)
   queuedPaths.push(...initialArguments.filter(argument => !argument.startsWith('-')))
   await restartRuntime()
 
-  app.on('activate', () => {
-    if (mainWindow !== undefined && !mainWindow.isDestroyed()) {
-      mainWindow.show()
-      return
-    }
-    mainWindow = createWindow()
-    if (runtimeUrl !== undefined) void mainWindow.loadURL(runtimeUrl.href).then(flushQueuedPaths)
-    else void showSplash({ error: true, message: 'DeepSeek Harness 未运行，请从“DSH”菜单重新启动。' })
-  })
+  app.on('activate', () => { revealMainWindow() })
   app.on('window-all-closed', () => {
+    // While the tray owns the hidden main window the app stays alive; a
+    // quit already in progress finishes on its own without re-entering.
+    if (process.platform === 'win32' && tray !== undefined && !quitting) return
     if (process.platform !== 'darwin') app.quit()
+  })
+  app.on('will-quit', () => {
+    tray?.destroy()
+    tray = undefined
   })
   app.on('before-quit', (event) => {
     if (quitting) return

@@ -159,6 +159,10 @@ sudo apt install ./Oh-DSH-Desktop-*.deb
 
 窗口标题栏、菜单栏与工具条合并为一行；点击该行左角的菜单名即可打开应用菜单。
 
+关闭窗口会将 Oh-DSH Desktop 最小化到系统托盘而不是退出：点击托盘图标可恢复
+窗口，通过托盘（或应用）菜单中的 **退出 Oh-DSH Desktop** 退出应用。macOS 与
+Linux 保持原有的关闭行为。
+
 ### Desktop 在线更新
 
 在应用菜单中选择 **Oh-DSH Desktop -> 检查更新…**。更新窗口只检查

@@ -187,6 +187,11 @@ installer may request administrator approval.
 The window title bar, menu bar, and tool strip are merged into a single row;
 open the application menu from the labels in the row's left corner.
 
+Closing the window minimizes Oh-DSH Desktop to the system tray instead of
+quitting: click the tray icon to restore the window, and use **Quit Oh-DSH
+Desktop** in the tray (or application) menu to exit. macOS and Linux keep
+their usual close behavior.
+
 ### Desktop online updates
 
 Choose **Oh-DSH Desktop -> Check for Updates...** from the application menu.
