@@ -2,6 +2,11 @@ const repositoryUrl = "https://github.com/hust-open-atom-club/oh-dsh";
 const latestReleaseUrl = `${repositoryUrl}/releases/latest`;
 const releaseApiUrl =
     "https://api.github.com/repos/hust-open-atom-club/oh-dsh/releases/latest";
+const atomgitRepositoryUrl =
+    "https://atomgit.com/hust-open-atom-club/oh-dsh";
+const atomgitReleasesUrl = `${atomgitRepositoryUrl}/releases`;
+const atomgitReleaseApiUrl =
+    "https://api.atomgit.com/api/v5/repos/hust-open-atom-club/oh-dsh/releases/latest";
 const releasesApiUrl =
     "https://api.github.com/repos/hust-open-atom-club/oh-dsh/releases?per_page=100";
 const downloadsCacheKey = "oh-dsh-site-downloads";
@@ -30,12 +35,12 @@ const translations = {
         copyCommand: "复制",
         copiedCommand: "已复制",
         downloadReady: "准备下载",
-        downloadTitle: "下载前，顺手点亮一颗 Star？",
+        downloadTitle: "选择下载渠道",
         downloadDescription:
-            "Oh-DSH 完全开源。你的 Star 会帮助更多开发者发现它，随后我们会继续下载。",
+            "请选择适合当前网络的渠道；国内网络可优先尝试 AtomGit。",
         detectedPlatform: "已识别当前平台",
-        starAndDownload: "去 GitHub Star，并继续下载",
-        directDownload: "直接下载",
+        atomgitDownload: "从 AtomGit 下载",
+        githubDownload: "从 GitHub 下载",
         unknownPlatform: "其他平台",
         footer: "开放、可组合的 DeepSeek Harness 工作台",
         qqGroup: "QQ 群",
@@ -62,12 +67,12 @@ const translations = {
         copyCommand: "Copy",
         copiedCommand: "Copied",
         downloadReady: "Ready to download",
-        downloadTitle: "Before you go, leave us a Star?",
+        downloadTitle: "Choose a download source",
         downloadDescription:
-            "Oh-DSH is fully open source. Your Star helps more developers find it, and your download will continue.",
+            "Choose the source that works best for your network. AtomGit may be faster in mainland China.",
         detectedPlatform: "Detected platform",
-        starAndDownload: "Star on GitHub and continue",
-        directDownload: "Download directly",
+        atomgitDownload: "Download from AtomGit",
+        githubDownload: "Download from GitHub",
         unknownPlatform: "Other platform",
         footer: "An open, composable DeepSeek Harness workbench",
         qqGroup: "QQ Group",
@@ -79,10 +84,10 @@ const translations = {
 };
 
 const elements = {
+    atomgitDownload: document.querySelector("[data-atomgit-download]"),
     descriptionMeta: document.querySelector('meta[name="description"]'),
     dialog: document.querySelector("[data-download-dialog]"),
     dialogClose: document.querySelector("[data-dialog-close]"),
-    directDownload: document.querySelector("[data-direct-download]"),
     downloadCount: document.querySelector("[data-download-count]"),
     downloadTrigger: document.querySelector("[data-download-trigger]"),
     installCaption: document.querySelector("[data-install-caption]"),
@@ -90,11 +95,11 @@ const elements = {
     installCopy: document.querySelector("[data-install-copy]"),
     installCopyLabel: document.querySelector("[data-install-copy] [data-i18n]"),
     languageToggle: document.querySelector("[data-language-toggle]"),
+    githubDownload: document.querySelector("[data-github-download]"),
     platformLabel: document.querySelector("[data-platform-label]"),
     particles: document.querySelector("[data-harness-particles]"),
     qqGroupLink: document.querySelector("[data-qq-group-link]"),
     starCount: document.querySelector("[data-star-count]"),
-    starDownload: document.querySelector("[data-star-download]"),
 };
 
 const installCommands = {
@@ -351,10 +356,17 @@ function chooseReleaseAsset(assets) {
     })[0];
 }
 
-function setDownloadUrl(url) {
-    elements.downloadTrigger.href = url;
-    elements.directDownload.href = url;
-    elements.starDownload.href = url;
+function loadReleaseDownload(apiUrl, fallbackUrl, element) {
+    return fetch(apiUrl)
+        .then((response) => (response.ok ? response.json() : Promise.reject()))
+        .then((release) => {
+            const asset = chooseReleaseAsset(release.assets ?? []);
+            element.href =
+                asset?.browser_download_url ?? release.html_url ?? fallbackUrl;
+        })
+        .catch(() => {
+            element.href = fallbackUrl;
+        });
 }
 
 function showCopyFeedback() {
@@ -459,10 +471,6 @@ function openQqGroup(event) {
 if (elements.qqGroupLink) {
     elements.qqGroupLink.addEventListener("click", openQqGroup);
 }
-
-elements.starDownload.addEventListener("click", () => {
-    window.open(repositoryUrl, "_blank", "noopener,noreferrer");
-});
 
 function cachedDownloadCount() {
     try {
@@ -581,16 +589,18 @@ if (typeof fetch === "function") {
               .catch(() => {})
         : Promise.resolve();
 
-    architecturePromise
-        .then(() => fetch(releaseApiUrl))
-        .then((response) => (response.ok ? response.json() : Promise.reject()))
-        .then((release) => {
-            const asset = chooseReleaseAsset(release.assets ?? []);
-            setDownloadUrl(
-                asset?.browser_download_url ?? release.html_url ?? latestReleaseUrl,
-            );
-        })
-        .catch(() => setDownloadUrl(latestReleaseUrl));
+    architecturePromise.then(() => {
+        void loadReleaseDownload(
+            atomgitReleaseApiUrl,
+            atomgitReleasesUrl,
+            elements.atomgitDownload,
+        );
+        void loadReleaseDownload(
+            releaseApiUrl,
+            latestReleaseUrl,
+            elements.githubDownload,
+        );
+    });
 }
 
 applyLanguage(preferredLanguage());
