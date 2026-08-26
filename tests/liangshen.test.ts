@@ -113,21 +113,35 @@ test('Liangshen adapters localize the pinned browser and TUI preset renderers', 
       'lib',
       'client.js',
     )
-    for (const path of [agentPresetHost, apiProxyHost, browserClient]) {
+    const connectionClient = join(
+      runtime,
+      'node_modules',
+      '.pnpm',
+      'connection-client-hash',
+      'node_modules',
+      '@deepseek-ai',
+      'dsh-client-connection',
+      'lib',
+      'client.js',
+    )
+    for (const path of [agentPresetHost, apiProxyHost, browserClient, connectionClient]) {
       mkdirSync(dirname(path), { recursive: true })
     }
     cpSync(pinnedPackageFile('dsh-agent-presets', 'lib', 'index.js'), agentPresetHost)
     cpSync(pinnedPackageFile('dsh-host-apiproxy', 'lib', 'index.js'), apiProxyHost)
     cpSync(pinnedPackageFile('dsh-client-ui-agent-preset', 'lib', 'client.js'), browserClient)
+    cpSync(pinnedPackageFile('dsh-client-connection', 'lib', 'client.js'), connectionClient)
     adaptDshLiangshenOwnership(runtime)
     adaptDshLiangshenPresentation(runtime)
     const hostSource = requireFile(agentPresetHost)
     const apiSource = requireFile(apiProxyHost)
     const browserSource = requireFile(browserClient)
+    const connectionSource = requireFile(connectionClient)
     assert.match(hostSource, /ohDshManagedPresetOwner/)
     assert.match(hostSource, /managedBy/)
     assert.match(apiSource, /managedBy: preset\.managedBy/)
     assert.match(apiSource, /managedBy: z\$1\.string/)
+    assert.match(connectionSource, /managedBy: string\(\)\.min\(1\)\.optional\(\)/)
     assert.match(browserSource, /Liangshen mode/)
     assert.match(browserSource, /preset\.managedBy === "@deepseek-harness-tui\/dsh-tui"/)
     assert.match(browserSource, /preset\.name === "梁神模式"/)
@@ -142,8 +156,18 @@ test('Liangshen adapters localize the pinned browser and TUI preset renderers', 
       'lib',
       'client.js',
     )
+    const hoistedConnection = join(
+      hoistedRuntime,
+      'node_modules',
+      '@deepseek-ai',
+      'dsh-client-connection',
+      'lib',
+      'client.js',
+    )
     mkdirSync(dirname(hoistedClient), { recursive: true })
+    mkdirSync(dirname(hoistedConnection), { recursive: true })
     cpSync(pinnedPackageFile('dsh-client-ui-agent-preset', 'lib', 'client.js'), hoistedClient)
+    cpSync(pinnedPackageFile('dsh-client-connection', 'lib', 'client.js'), hoistedConnection)
     adaptDshLiangshenPresentation(hoistedRuntime)
     assert.match(requireFile(hoistedClient), /Liangshen mode/)
 

@@ -148,9 +148,29 @@ export function adaptDshLiangshenPresentation(runtimeRoot) {
     'lib',
     'client.js',
   )
-  if (!existsSync(path)) {
-    throw new Error('dsh-client-ui-agent-preset is missing from the staged runtime')
+  const connectionPath = dshPackageFilePath(
+    runtimeRoot,
+    'dsh-client-connection',
+    'lib',
+    'client.js',
+  )
+  for (const required of [path, connectionPath]) {
+    if (!existsSync(required)) {
+      throw new Error(`Liangshen browser adapter dependency is missing: ${required}`)
+    }
   }
+  const connectionSchemaAnchor = [
+    '\t\t\tid: string().min(1),',
+    '\t\t\ttrust: union([literal("system"), literal("user")]),',
+    '\t\t\tisDefault: boolean(),',
+  ].join('\n')
+  patchFile(connectionPath, [[connectionSchemaAnchor, [
+    '\t\t\tid: string().min(1),',
+    '\t\t\ttrust: union([literal("system"), literal("user")]),',
+    '\t\t\tmanagedBy: string().min(1).optional(),',
+    '\t\t\tisDefault: boolean(),',
+  ].join('\n')]])
+
   const englishAnchor = '\t\t\tpresetCordisDescription: "Built for creating custom agent presets, with all Standard mode capabilities plus runtime inspection, plugin experiments, and preset-authoring guidance.",'
   const chineseAnchor = '\t\t\tpresetCordisDescription: "用于创建自定义 Agent preset：具备标准模式的全部能力，并提供运行时检查、插件实验和 preset 创作指导。",'
   const mappingAnchor = [
