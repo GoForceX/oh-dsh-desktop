@@ -24,7 +24,8 @@ validated metadata; missing, stale, rate-limited, or malformed responses do not
 turn a card into an installation approval.
 
 The displayed metadata is presentation context: repository identity and URL,
-description, stars, forks, and the provider's activity fields when available.
+description, stars, forks, GitHub's combined open issue and pull-request count,
+primary language, license, and repository update time when available.
 Popularity is never a security signal or trust grant. Installation safety
 continues to come from the Marketplace source, provenance, permissions,
 preview, explicit approval, and transaction/recovery controls. GitHub values

@@ -36,3 +36,18 @@ export function marketplaceRepositoryStats(
     plugin.stats?.language ?? null,
   ].filter((value): value is string => value !== null)
 }
+
+/** Format all repository fields shown in a marketplace detail view. */
+export function marketplaceRepositoryDetails(
+  plugin: MarketplacePlugin,
+  locale = 'en-US',
+  unknown = 'unknown',
+): string[] {
+  if (plugin.stats === null) return []
+  return [
+    `GitHub: ★ ${plugin.stats.stars} · forks ${plugin.stats.forks} · issues + PRs ${plugin.stats.openIssues}`,
+    `language: ${plugin.stats.language ?? unknown}`,
+    `license: ${plugin.stats.license ?? unknown}`,
+    `updated: ${formatMarketplaceDate(plugin.stats.updatedAt, locale, unknown)}`,
+  ]
+}
