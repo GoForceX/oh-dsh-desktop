@@ -507,6 +507,7 @@ function confirmationLabel(
   t: Translate<MarketplaceMessage>,
 ): string {
   if (confirmation === 'allow-build-scripts') return t('allow-scripts')
+  if (confirmation === 'accept-unsandboxed-build') return t('accept-unsandboxed-build')
   if (confirmation === 'accept-high-risk') return t('accept-high-risk')
   return t('accept-source-change')
 }
@@ -598,7 +599,9 @@ function PluginDetail({
   const hasScripts = plan !== null && Object.keys(plan.buildScripts).length > 0
   const readyToPreview = plan !== null
     && plan.requirements.every(requirement => confirmations.includes(requirement))
-  useEffect(() => { setConfirmations([]) }, [plugin.id, plan?.resolvedCommit])
+  useEffect(() => {
+    setConfirmations([])
+  }, [plugin.id, plan?.resolvedCommit, plan?.manifestHash, plan?.action])
   const setConfirmed = (
     confirmation: MarketplaceConfirmation,
     confirmed: boolean,

@@ -36,15 +36,15 @@ patch row. Desktop and Web users had no path to subscription accounts.
 - Marketplace protection covers the plugin id, package name, and
   `ccch1mneyyy/dsh-auth` repository, with a refusal test mirroring the
   dsh-context one.
-- Nix registers the package for the full and web surfaces from the bundle's
-  `auth/` dir (npm release layout), and the extra-deps copy loop now merges
-  scoped entries package by package instead of skipping a scope directory
-  the renderer already created. The full `oh-dsh` package builds clean with
-  both `@deepseek-harness-tui/dsh-auth` and `dsh-context` registered. The
-  renderer always points its private `dsh-auth` dependency at the final runtime
-  copy: full/web reuse the registered package, while TUI materializes it from
-  extra-deps. That copy resolves peers through the final runtime's
-  `node_modules`, never through the immutable bundle-store source path.
+- Nix mounts the published tarball at the repository-shaped staging root's
+  `upstream/dsh-TUI/dsh-auth` (npm release layout); the shared runtime
+  assembler (`installDesktopPackages` in `scripts/stage-runtime-lib.mjs`)
+  registers it for the full and web surfaces. The full `oh-dsh` package
+  builds clean with both `@deepseek-harness-tui/dsh-auth` and `dsh-context`
+  registered. The renderer's private `dsh-auth` dependency is copied into
+  its package-local `.oh-dsh-store` by the same dependency installer the
+  release pipeline runs, so it never resolves through the immutable
+  bundle-store source path.
 
 ## Alternatives considered
 
@@ -65,9 +65,12 @@ and works unchanged on every surface today.
 
 - `/auth` works on all three surfaces against the same stored credentials
   in the Oh-DSH data directory.
-- `tests/nix-register-plugins.test.ts` imports the renderer through its actual
-  dependency link on full and TUI fixtures and requires `dsh-auth` to resolve a
-  peer from the final runtime graph.
+- `tests/stage-runtime-lib.test.ts` stages full and TUI fixtures through the
+  shared assembler and requires `dsh-auth` host peers to resolve from the
+  staged runtime graph.
+- The Nix assembly mechanism now lives in the shared runtime assembler (see
+  2026-08-27-nix-packaging-shares-stage-dsh-assembly); this note keeps the
+  surface-membership and private-copy decisions.
 - Upgrading the renderer pin moves the dsh-auth source with it; the
   standalone staging spec follows the nested submodule path, so a future
   move of the nested package breaks staging loudly.

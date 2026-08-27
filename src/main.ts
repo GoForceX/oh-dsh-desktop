@@ -63,6 +63,7 @@ import {
   type BundledRuntimePaths,
 } from './runtime-paths.ts'
 import { resolveProductVersion } from './version.ts'
+import { resolveLandlockLauncher } from './landlock-launcher.ts'
 import {
   RuntimeUpdateManager,
   resolveStagedRuntimeRoot,
@@ -251,6 +252,7 @@ function previewRuntimeOptions(input: {
   dshHome: string
   pluginId: string
   sandboxRoot: string
+  sandboxed: boolean
   transactionId: string
 }): DshRuntimeOptions {
   const paths = runtimePaths()
@@ -264,7 +266,18 @@ function previewRuntimeOptions(input: {
   const sandbox = '/usr/bin/sandbox-exec'
   const launcher = process.platform === 'darwin' && existsSync(sandbox)
     ? { args: ['-p', previewSandboxPolicy(input.sandboxRoot)], command: sandbox }
-    : undefined
+    : process.platform === 'linux'
+      ? (() => {
+        const landlock = resolveLandlockLauncher(paths.runtimeRoot)
+        return landlock === undefined ? undefined : {
+          args: ['--ro', '/', '--rw', input.sandboxRoot, '--rw', '/dev/null', '--'],
+          command: landlock,
+        }
+      })()
+      : undefined
+  if (input.sandboxed && launcher === undefined) {
+    throw new Error(`scripted marketplace previews require a write-restricted process sandbox, which is unavailable on ${process.platform}`)
+  }
   return {
     args: ['--profile', DESKTOP_PROFILE],
     cliEntry: paths.cliEntry,
@@ -277,7 +290,7 @@ function previewRuntimeOptions(input: {
       }),
       TMPDIR: temporary,
     },
-    ...(launcher === undefined ? {} : { launcher }),
+    ...(input.sandboxed && launcher !== undefined ? { launcher } : {}),
     nodeBinary: paths.nodeBinary,
     onLog: (stream, line) => { appendLog(stream, `[preview:${input.pluginId}] ${line}`) },
     readyTimeoutMs: 90_000,
@@ -708,6 +721,7 @@ async function startPreviewSurface(input: {
   dshHome: string
   pluginId: string
   sandboxRoot: string
+  sandboxed: boolean
   transactionId: string
 }): Promise<{ url?: string }> {
   await stopPreviewSurface()
@@ -864,6 +878,7 @@ function createPluginMarketplace(): PluginMarketplaceManager {
       env: environment,
       nodeBinary: paths.nodeBinary,
       pnpmEntry: paths.pnpmEntry,
+      sandboxLauncher: resolveLandlockLauncher(paths.runtimeRoot),
       onLog: line => { appendLog('desktop', `[marketplace] ${line}`) },
     }),
     profile: DESKTOP_PROFILE,
@@ -1229,13 +1244,15 @@ function installIpc(): void {
     return desktopInfo(preview)
   })
   ipcMain.handle('desktop:get-runtime-snapshot', () => desktopRuntimeSnapshot())
-  ipcMain.handle('desktop:plugin-marketplace-snapshot', () => {
+  ipcMain.handle('desktop:plugin-marketplace-snapshot', (event) => {
+    if (event.sender !== mainWindow?.webContents) throw new Error('untrusted marketplace sender')
     if (marketplace === undefined) throw new Error('plugin marketplace is not initialized')
     return marketplace.getSnapshot()
   })
-  ipcMain.handle('desktop:plugin-marketplace-dispatch', async (_event, raw: unknown) => {
+  ipcMain.handle('desktop:plugin-marketplace-dispatch', async (event, raw: unknown) => {
+    if (event.sender !== mainWindow?.webContents) throw new Error('untrusted marketplace sender')
     if (marketplace === undefined) throw new Error('plugin marketplace is not initialized')
-    return await marketplace.dispatch(parseMarketplaceCommand(raw))
+    return await marketplace.dispatch(parseMarketplaceCommand(raw), 'human-ui')
   })
   ipcMain.handle('desktop:open-external', async (_event, raw: unknown) => {
     if (typeof raw !== 'string') throw new Error('external URL must be a string')

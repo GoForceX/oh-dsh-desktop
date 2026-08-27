@@ -100,6 +100,7 @@ class FakePlatform implements MarketplacePlatform {
   readonly builds: Array<{
     checkout: string
     sandboxRoot: string
+    sandboxed: boolean | undefined
     scripts: string[]
   }> = []
   readonly commands: DshCommandInput[] = []
@@ -108,6 +109,7 @@ class FakePlatform implements MarketplacePlatform {
   latestCommit = COMMIT
   bundleName = '@example/bundle-demo'
   bundleDescription = 'Bundle demo manifest'
+  scriptSandboxAvailable = true
 
   async authStatus(): Promise<MarketplaceAuthResult> {
     return { detail: 'test auth', status: 'ready' }
@@ -117,6 +119,7 @@ class FakePlatform implements MarketplacePlatform {
     this.builds.push({
       checkout: input.checkout,
       sandboxRoot: input.sandboxRoot,
+      sandboxed: input.sandboxed,
       scripts: input.scripts,
     })
   }
@@ -735,16 +738,33 @@ test('production bundle build runs approved hooks in its own workspace', {
   }
 })
 
-test('scripted bundle previews fail closed without a write sandbox', () => {
-  for (const platform of ['linux', 'win32'] as const) {
-    assert.throws(() => previewScriptCommand({
-      nodeArguments: ['/preview/pnpm.mjs', 'install'],
-      nodeBinary: '/preview/node',
-      pathExists: () => false,
-      platform,
-      root: '/preview',
-    }), new RegExp(`unavailable on ${platform}`))
-  }
+test('scripted bundle previews use Linux Landlock and fail closed without it', () => {
+  const linux = previewScriptCommand({
+    nodeArguments: ['/preview/pnpm.mjs', 'install'],
+    nodeBinary: '/preview/node',
+    pathExists: () => true,
+    platform: 'linux',
+    root: '/preview',
+    sandbox: '/runtime/landlock-run',
+  })
+  assert.deepEqual(linux, {
+    command: '/runtime/landlock-run',
+    args: ['--ro', '/', '--rw', '/preview', '--rw', '/dev/null', '--', '/preview/node', '/preview/pnpm.mjs', 'install'],
+  })
+  assert.throws(() => previewScriptCommand({
+    nodeArguments: ['/preview/pnpm.mjs', 'install'],
+    nodeBinary: '/preview/node',
+    pathExists: () => false,
+    platform: 'linux',
+    root: '/preview',
+  }), /unavailable on linux/)
+  assert.throws(() => previewScriptCommand({
+    nodeArguments: ['/preview/pnpm.mjs', 'install'],
+    nodeBinary: '/preview/node',
+    pathExists: () => false,
+    platform: 'win32',
+    root: '/preview',
+  }), /unavailable on win32/)
   assert.throws(() => previewScriptCommand({
     nodeArguments: ['/preview/pnpm.mjs', 'install'],
     nodeBinary: '/preview/node',
@@ -1158,7 +1178,7 @@ test('preview strips a stale pnpm store reference from the copied profile', asyn
     assert.equal(snapshot.error, null)
     snapshot = await setup.manager.dispatch({ type: 'inspect', action: 'install', pluginId: 'bundle-demo' })
     assert.equal(snapshot.error, null)
-    snapshot = await setup.manager.dispatch({ type: 'preview', allowBuildScripts: true })
+    snapshot = await setup.manager.dispatch({ type: 'preview', confirmations: ["allow-build-scripts"] })
     assert.equal(snapshot.error, null)
 
     // The copied candidate must not keep the stale tree: the preview's pnpm
@@ -1191,11 +1211,11 @@ test('bundle preview remains isolated until apply and supports undo', async () =
     snapshot = await setup.manager.dispatch({ type: 'inspect', action: 'install', pluginId: 'bundle-demo' })
     assert.deepEqual(snapshot.plan?.buildScripts, { prepare: 'node build.mjs' })
 
-    snapshot = await setup.manager.dispatch({ type: 'preview', allowBuildScripts: false })
+    snapshot = await setup.manager.dispatch({ type: 'preview', confirmations: [] })
     assert.match(snapshot.error ?? '', /allow-build-scripts/)
     assert.equal(snapshot.preview, null)
 
-    snapshot = await setup.manager.dispatch({ type: 'preview', allowBuildScripts: true })
+    snapshot = await setup.manager.dispatch({ type: 'preview', confirmations: ["allow-build-scripts"] })
     assert.equal(snapshot.error, null)
     assert.equal(snapshot.preview?.pluginId, 'bundle-demo')
     assert.equal(setup.platform.builds.length, 1)
@@ -1265,6 +1285,42 @@ test('safe actions prepare an isolated candidate in one transaction', async () =
     assert.equal(snapshot.lifecycle.candidate?.pluginId, 'safe-demo')
     assert.equal(snapshot.lifecycle.current.profile, 'desktop')
     assert.equal(snapshot.lifecycle.previous, null)
+  } finally {
+    setup.cleanup()
+  }
+})
+
+test('unsandboxed builds require direct human approval', async () => {
+  const setup = fixture()
+  try {
+    setup.platform.scriptSandboxAvailable = false
+    await setup.manager.dispatch({ type: 'refresh' })
+    let snapshot = await setup.manager.dispatch({
+      type: 'prepare',
+      action: 'install',
+      pluginId: 'bundle-demo',
+    })
+    assert.deepEqual(snapshot.plan?.requirements, [
+      'allow-build-scripts',
+      'accept-unsandboxed-build',
+    ])
+
+    snapshot = await setup.manager.dispatch({
+      type: 'preview',
+      confirmations: ['allow-build-scripts', 'accept-unsandboxed-build'],
+    }, 'agent')
+    assert.match(snapshot.error ?? '', /direct human approval/)
+    assert.equal(snapshot.preview, null)
+    assert.equal(setup.platform.builds.length, 0)
+
+    snapshot = await setup.manager.dispatch({
+      type: 'preview',
+      confirmations: ['allow-build-scripts', 'accept-unsandboxed-build'],
+    }, 'human-ui')
+    assert.equal(snapshot.error, null)
+    assert.equal(snapshot.preview?.pluginId, 'bundle-demo')
+    assert.equal(setup.platform.builds.length, 1)
+    assert.equal(setup.platform.builds[0]?.sandboxed, false)
   } finally {
     setup.cleanup()
   }
@@ -1518,7 +1574,7 @@ test('installed bundles keep enabled state and update through isolated previews'
       action: 'install',
       pluginId: 'bundle-demo',
     })
-    await setup.manager.dispatch({ type: 'preview', allowBuildScripts: true })
+    await setup.manager.dispatch({ type: 'preview', confirmations: ["allow-build-scripts"] })
     let snapshot = await setup.manager.dispatch({ type: 'apply' })
     let plugin = snapshot.catalog.find(entry => entry.id === 'bundle-demo')
     assert.equal(plugin?.installed, true)
@@ -1545,7 +1601,7 @@ test('installed bundles keep enabled state and update through isolated previews'
       action: 'enable',
       pluginId: 'bundle-demo',
     })
-    await setup.manager.dispatch({ type: 'preview', allowBuildScripts: false })
+    await setup.manager.dispatch({ type: 'preview', confirmations: [] })
     snapshot = await setup.manager.dispatch({ type: 'apply' })
     plugin = snapshot.catalog.find(entry => entry.id === 'bundle-demo')
     assert.equal(plugin?.enabled, true)
@@ -1561,7 +1617,7 @@ test('installed bundles keep enabled state and update through isolated previews'
       action: 'update',
       pluginId: 'bundle-demo',
     })
-    await setup.manager.dispatch({ type: 'preview', allowBuildScripts: true })
+    await setup.manager.dispatch({ type: 'preview', confirmations: ["allow-build-scripts"] })
     snapshot = await setup.manager.dispatch({ type: 'apply' })
     plugin = snapshot.catalog.find(entry => entry.id === 'bundle-demo')
     assert.equal(plugin?.currentCommit, UPDATED_COMMIT)
@@ -1629,7 +1685,7 @@ test('repository plugins can be disabled without losing their install receipt', 
       action: 'disable',
       pluginId: 'repository-demo',
     })
-    await setup.manager.dispatch({ type: 'preview', allowBuildScripts: false })
+    await setup.manager.dispatch({ type: 'preview', confirmations: [] })
     snapshot = await setup.manager.dispatch({ type: 'apply' })
     plugin = snapshot.catalog.find(entry => entry.id === 'repository-demo')
     assert.equal(plugin?.installed, true)

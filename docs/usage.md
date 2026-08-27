@@ -487,9 +487,12 @@ uninstall. Desktop and Web use the sidebar marketplace; in TUI run `/plugins`
 (or press `Ctrl+M`) to open the terminal marketplace.
 
 The catalog labels the surfaces where each plugin is expected to take effect.
-Installation itself succeeds on all three surfaces; if a plugin declares Web
-or Desktop support only, it will not take effect in TUI after installation,
-and the cards and details call that out explicitly.
+Installation itself succeeds on all three surfaces when the required preview
+sandbox is available; if a plugin declares Web or Desktop support only, it will
+not take effect in TUI after installation, and the cards and details call that
+out explicitly. Linux x64 uses the staged Landlock launcher for scripted builds.
+If no write-restricted sandbox is available, a direct human can separately
+accept an explicitly labelled unsafe build; Agents cannot authorize that mode.
 
 Recommended flow:
 

@@ -197,12 +197,15 @@ test('Liangshen adapters localize the pinned browser and TUI preset renderers', 
   }
 })
 
-test('Nix applies Liangshen presentation adapters to its copied runtimes', () => {
+test('Nix applies Liangshen presentation adapters through the shared assembler', () => {
   const nix = requireFile(join(root, 'nix', 'oh-dsh.nix'))
-  assert.equal((nix.match(/plugins\/liangshen\/src\/upstream-adapter\.mjs/g) ?? []).length, 3)
-  assert.match(nix, /tui-renderer/)
+  assert.equal((nix.match(/plugins\/liangshen\/src\/upstream-adapter\.mjs/g) ?? []).length, 2)
   assert.match(nix, /ownership \$out\/dsh-runtime/)
   assert.match(nix, /dsh \$out\/dsh-runtime/)
+  // The renderer presentation adapter runs inside installDesktopPackages
+  // (scripts/stage-runtime-lib.mjs), the same path stage-dsh.mjs uses.
+  const assembler = requireFile(join(root, 'scripts', 'stage-runtime-lib.mjs'))
+  assert.match(assembler, /adaptTuiLiangshenPresentation\(packageDir\)/)
 })
 
 test('Liangshen plugin skips preset installation in read-only viewer mode', () => {

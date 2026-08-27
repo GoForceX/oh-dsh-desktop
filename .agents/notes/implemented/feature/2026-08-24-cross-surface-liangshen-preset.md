@@ -34,9 +34,11 @@ English locale still rendered the Chinese Liangshen name and description.
 - Skip the install when the surface starts as a read-only viewer
   (`OH_DSH_READ_ONLY=1`): the viewer shares the data root with an active
   surface, and installing would replace preset state that surface owns.
-- Register the plugin in the Nix `full` and `web` assemblies through
-  `nix/register-plugins.py`, staging the preset beside `dist/` from the
-  pinned TUI release; the Nix TUI closure stays on the upstream preset.
+- Register the plugin in the Nix `full` and `web` assemblies through the
+  shared runtime assembler (`installDesktopPackages` in
+  `scripts/stage-runtime-lib.mjs`, the same function the release pipeline
+  runs), staging the preset beside `dist/` from the pinned TUI release; the
+  Nix TUI closure stays on the upstream preset.
 - Do not mount that plugin in TUI; the pinned dsh-TUI renderer already installs
   and exposes its own Liangshen preset.
 - Keep the preset source in the pinned dsh-TUI checkout so its tool-bootstrap,
@@ -82,7 +84,10 @@ backward compatible.
   not receive a duplicate Liangshen runtime package.
 - Nix Desktop/Web resolve the plugin package and its preset exactly like the
   staged (non-Nix) deployment, guarded by
-  `tests/nix-register-plugins.test.ts`.
+  `tests/stage-runtime-lib.test.ts`.
+- The Nix assembly mechanism now lives in the shared runtime assembler (see
+  2026-08-27-nix-packaging-shares-stage-dsh-assembly); this note keeps the
+  surface-membership decision.
 - `tests/liangshen.test.ts`, `tests/tui.test.ts`, and the Desktop/Web smoke
   checks pin the marker-derived ownership field, canonical-metadata guard, and
   served client bundles.

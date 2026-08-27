@@ -68,6 +68,7 @@ export interface MarketplacePreviewRuntimeInput {
   dshHome: string
   pluginId: string
   sandboxRoot: string
+  sandboxed: boolean
   transactionId: string
 }
 
@@ -83,6 +84,8 @@ export interface MarketplaceRuntime {
   stopLive(): Promise<void>
   stopPreview(): Promise<void>
 }
+
+export type MarketplaceDispatchPrincipal = 'human-ui' | 'agent'
 
 export interface PluginMarketplaceOptions {
   appDataPath: string
@@ -226,6 +229,7 @@ function assessRisk(input: {
   buildScripts: Record<string, string>
   mechanism: MarketplacePlan['mechanism']
   protectedPlugin: boolean
+  sandboxAvailable: boolean
   sourceReview: MarketplaceSourceReview
 }): {
   requirements: MarketplaceConfirmation[]
@@ -251,6 +255,7 @@ function assessRisk(input: {
   if (activatesCode && Object.keys(input.buildScripts).length > 0) {
     reasons.push('install-scripts')
     requirements.push('allow-build-scripts')
+    if (!input.sandboxAvailable) requirements.push('accept-unsandboxed-build')
   }
   if (input.sourceReview === 'changed') {
     reasons.push('source-change')
@@ -732,7 +737,10 @@ export class PluginMarketplaceManager {
     })
   }
 
-  async dispatch(command: MarketplaceCommand): Promise<MarketplaceSnapshot> {
+  async dispatch(
+    command: MarketplaceCommand,
+    principal: MarketplaceDispatchPrincipal = 'human-ui',
+  ): Promise<MarketplaceSnapshot> {
     if (this.#busy) return this.getSnapshot()
     if (this.#options.readOnly === true && command.type !== 'refresh') {
       this.#lastAction = command.type
@@ -753,8 +761,10 @@ export class PluginMarketplaceManager {
           await this.prepare(command.action, command.pluginId)
           break
         case 'preview':
-          await this.preview(command.confirmations
-            ?? (command.allowBuildScripts === true ? ['allow-build-scripts'] : []))
+          if (principal === 'agent' && command.confirmations?.includes('accept-unsandboxed-build')) {
+            throw new Error('unsandboxed marketplace builds require direct human approval')
+          }
+          await this.preview(command.confirmations ?? [])
           break
         case 'discard':
           await this.discard()
@@ -837,6 +847,7 @@ export class PluginMarketplaceManager {
         buildScripts: {},
         mechanism: current.mechanism,
         protectedPlugin: false,
+        sandboxAvailable: this.#options.platform.scriptSandboxAvailable !== false,
         sourceReview: review,
       })
       this.#plan = {
@@ -953,6 +964,7 @@ export class PluginMarketplaceManager {
       buildScripts: scripts,
       mechanism: resolvedMechanism,
       protectedPlugin: catalogPlugin.protected,
+      sandboxAvailable: this.#options.platform.scriptSandboxAvailable !== false,
       sourceReview: review,
     })
     this.#plan = {
@@ -1046,6 +1058,7 @@ export class PluginMarketplaceManager {
               checkout: cloneTarget,
               sandboxRoot: root,
               scripts: scriptNames,
+              sandboxed: !confirmations.includes('accept-unsandboxed-build'),
             })
             renameSync(cloneTarget, checkout)
           }
@@ -1053,6 +1066,7 @@ export class PluginMarketplaceManager {
             args: ['plugin', '--profile', this.#options.profile, 'add', checkout],
             dshHome: candidateHome,
             sandboxRoot: root,
+            sandboxed: !confirmations.includes('accept-unsandboxed-build'),
           })
           const manifest = readJson(join(candidateProfile, 'package.json'))
           if (!isRecord(manifest) || !isRecord(manifest.dependencies)
@@ -1131,6 +1145,7 @@ export class PluginMarketplaceManager {
         dshHome: candidateHome,
         pluginId: plan.pluginId,
         sandboxRoot: root,
+        sandboxed: !confirmations.includes('accept-unsandboxed-build'),
         transactionId,
       })
       if (started.url !== undefined) {

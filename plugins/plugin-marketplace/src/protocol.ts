@@ -25,6 +25,7 @@ export type MarketplaceRiskReason =
 export type MarketplaceSourceReview = 'first-use' | 'matched' | 'changed'
 export type MarketplaceConfirmation =
   | 'allow-build-scripts'
+  | 'accept-unsandboxed-build'
   | 'accept-high-risk'
   | 'accept-source-change'
 
@@ -187,8 +188,6 @@ export type MarketplaceCommand =
   | {
     type: 'preview'
     confirmations?: MarketplaceConfirmation[]
-    /** @deprecated Accepted while older renderers reconnect during an upgrade. */
-    allowBuildScripts?: boolean
   }
   | { type: 'discard' }
   | { type: 'apply' }
@@ -233,6 +232,7 @@ export function parseMarketplaceCommand(value: unknown): MarketplaceCommand {
   if (value.type === 'preview') {
     const valid = new Set<MarketplaceConfirmation>([
       'allow-build-scripts',
+      'accept-unsandboxed-build',
       'accept-high-risk',
       'accept-source-change',
     ])
@@ -242,15 +242,9 @@ export function parseMarketplaceCommand(value: unknown): MarketplaceCommand {
           || !valid.has(entry as MarketplaceConfirmation)))) {
       throw new Error('invalid marketplace preview confirmations')
     }
-    if (value.allowBuildScripts !== undefined
-      && typeof value.allowBuildScripts !== 'boolean') {
-      throw new Error('invalid marketplace preview compatibility flag')
-    }
     const confirmations = Array.isArray(value.confirmations)
       ? value.confirmations as MarketplaceConfirmation[]
-      : value.allowBuildScripts === true
-        ? ['allow-build-scripts'] satisfies MarketplaceConfirmation[]
-        : [] satisfies MarketplaceConfirmation[]
+      : [] satisfies MarketplaceConfirmation[]
     return { type: 'preview', confirmations }
   }
   throw new Error(`unsupported marketplace command: ${value.type}`)

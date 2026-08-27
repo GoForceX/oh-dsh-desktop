@@ -61,6 +61,7 @@ export type MarketplaceMessage =
   | 'commit'
   | 'package'
   | 'allow-scripts'
+  | 'accept-unsandboxed-build'
   | 'accept-high-risk'
   | 'accept-source-change'
   | 'recovery-note'
@@ -164,6 +165,7 @@ export const MARKETPLACE_MESSAGES: LocaleMessages<MarketplaceMessage> = {
     commit: 'commit {commit}',
     package: 'package {package}',
     'allow-scripts': 'Allow these scripts only inside the write-restricted preview.',
+    'accept-unsandboxed-build': 'Run these third-party build scripts without process isolation (unsafe).',
     'accept-high-risk': 'I understand that this plugin runs as trusted host code after apply.',
     'accept-source-change': 'I reviewed and accept the changed source identity.',
     'recovery-note': 'Apply swaps the profile atomically. The previous profile stays available for recovery; arbitrary external effects are not rolled back.',
@@ -266,6 +268,7 @@ export const MARKETPLACE_MESSAGES: LocaleMessages<MarketplaceMessage> = {
     commit: '提交 {commit}',
     package: '软件包 {package}',
     'allow-scripts': '仅允许在写入受限的预览环境中运行这些脚本。',
+    'accept-unsandboxed-build': '在没有进程隔离的情况下运行这些第三方构建脚本（不安全）。',
     'accept-high-risk': '我了解应用后该插件会作为受信任主机代码运行。',
     'accept-source-change': '我已检查并接受变化后的来源身份。',
     'recovery-note': '应用时会原子替换 Profile，并保留上一版本用于恢复；插件产生的任意外部副作用不在回滚范围内。',

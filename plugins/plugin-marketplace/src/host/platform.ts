@@ -21,6 +21,7 @@ import {
   win32,
 } from 'node:path'
 import { parseMarketplaceCatalog } from '../catalog.ts'
+import { landlockPreviewCommand } from '../../../../src/landlock-launcher.ts'
 import type { MarketplaceAuthStatus } from '../protocol.ts'
 import {
   MARKETPLACE_CATALOG_PATH,
@@ -49,10 +50,14 @@ export interface BundleBuildInput {
   checkout: string
   sandboxRoot: string
   scripts: string[]
+  /** Explicitly opt out of process confinement; never the default. */
+  sandboxed?: boolean
 }
 
 /** Privileged operations consumed by the marketplace transaction module. */
 export interface MarketplacePlatform {
+  /** Whether lifecycle scripts can run under a write-restricted launcher. */
+  readonly scriptSandboxAvailable?: boolean
   authStatus(): Promise<MarketplaceAuthResult>
   buildBundle(input: BundleBuildInput): Promise<void>
   cloneRepository(repository: string, commit: string, target: string): Promise<void>
@@ -79,6 +84,8 @@ export interface ProductionMarketplacePlatformOptions {
   nodeBinary: string
   now?: () => number
   pnpmEntry: string
+  /** Packaged Linux launcher; absent means scripted previews fail closed. */
+  sandboxLauncher?: string | undefined
   onLog?: (message: string) => void
 }
 
@@ -333,7 +340,7 @@ interface PreviewScriptCommandInput {
   pathExists?: (path: string) => boolean
   platform?: NodeJS.Platform
   root: string
-  sandbox?: string
+  sandbox?: string | undefined
 }
 
 /** Select a write-restricted launcher or reject the scripted preview. */
@@ -341,30 +348,43 @@ export function previewScriptCommand(
   input: PreviewScriptCommandInput,
 ): { args: string[]; command: string } {
   const platform = input.platform ?? process.platform
-  const sandbox = input.sandbox ?? '/usr/bin/sandbox-exec'
   const pathExists = input.pathExists ?? existsSync
-  if (platform !== 'darwin' || !pathExists(sandbox)) {
-    throw new Error(
-      `scripted marketplace previews require a write-restricted process sandbox, which is unavailable on ${platform}`,
-    )
+  const sandbox = input.sandbox
+    ?? (platform === 'darwin' ? '/usr/bin/sandbox-exec' : undefined)
+  if (platform === 'darwin') {
+    if (sandbox === undefined || !pathExists(sandbox)) {
+      throw new Error(
+        `scripted marketplace previews require a write-restricted process sandbox, which is unavailable on ${platform}`,
+      )
+    }
+    return {
+      args: ['-p', previewSandboxPolicy(input.root), input.nodeBinary, ...input.nodeArguments],
+      command: sandbox,
+    }
   }
-  return {
-    args: [
-      '-p',
-      previewSandboxPolicy(input.root),
-      input.nodeBinary,
-      ...input.nodeArguments,
-    ],
-    command: sandbox,
+  if (platform === 'linux' && sandbox !== undefined && pathExists(sandbox)) {
+    return landlockPreviewCommand({
+      launcher: sandbox,
+      nodeBinary: input.nodeBinary,
+      nodeArguments: input.nodeArguments,
+      root: input.root,
+    })
   }
+  throw new Error(
+    `scripted marketplace previews require a write-restricted process sandbox, which is unavailable on ${platform}`,
+  )
 }
 
 export class ProductionMarketplacePlatform implements MarketplacePlatform {
+  readonly scriptSandboxAvailable: boolean
   readonly #ghPath: string | null
   readonly #options: ProductionMarketplacePlatformOptions
 
   constructor(options: ProductionMarketplacePlatformOptions) {
     this.#options = options
+    this.scriptSandboxAvailable = process.platform === 'darwin'
+      ? existsSync('/usr/bin/sandbox-exec')
+      : process.platform === 'linux' && options.sandboxLauncher !== undefined
     this.#ghPath = findGitHubCli(options.env)
   }
 
@@ -436,11 +456,14 @@ export class ProductionMarketplacePlatform implements MarketplacePlatform {
         })),
     ]
     for (const command of commands) {
-      const launcher = previewScriptCommand({
-        nodeArguments: command.args,
-        nodeBinary: this.#options.nodeBinary,
-        root: input.sandboxRoot,
-      })
+      const launcher = input.sandboxed === false
+        ? { command: this.#options.nodeBinary, args: command.args }
+        : previewScriptCommand({
+          nodeArguments: command.args,
+          nodeBinary: this.#options.nodeBinary,
+          root: input.sandboxRoot,
+          sandbox: this.#options.sandboxLauncher,
+        })
       this.#options.onLog?.(`marketplace build: ${command.label}`)
       const result = await runCommand(launcher.command, launcher.args, {
         cwd: input.checkout,
@@ -609,13 +632,16 @@ export class ProductionMarketplacePlatform implements MarketplacePlatform {
       DSH_HOME: input.dshHome,
     }, this.#ghPath)
     const nodeArguments = [this.#options.cliEntry, ...input.args]
-    const sandbox = '/usr/bin/sandbox-exec'
-    const command = sandboxed && process.platform === 'darwin' && existsSync(sandbox)
-      ? sandbox
-      : this.#options.nodeBinary
-    const args = command === sandbox
-      ? ['-p', previewSandboxPolicy(input.sandboxRoot), this.#options.nodeBinary, ...nodeArguments]
-      : nodeArguments
+    const launcher = sandboxed
+      ? previewScriptCommand({
+        nodeArguments,
+        nodeBinary: this.#options.nodeBinary,
+        root: input.sandboxRoot,
+        sandbox: this.#options.sandboxLauncher,
+      })
+      : { command: this.#options.nodeBinary, args: nodeArguments }
+    const command = launcher.command
+    const args = launcher.args
     this.#options.onLog?.(`marketplace command: dsh ${input.args.join(' ')}`)
     const result = await runCommand(command, args, {
       ...(this.#options.cwd === undefined ? {} : { cwd: this.#options.cwd }),

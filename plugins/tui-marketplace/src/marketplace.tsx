@@ -21,6 +21,9 @@ function confirmationLabel(confirmation: MarketplaceConfirmation): string {
   if (confirmation === 'allow-build-scripts') {
     return 'Allow install scripts in the isolated preview'
   }
+  if (confirmation === 'accept-unsandboxed-build') {
+    return 'Run build scripts without process isolation (unsafe)'
+  }
   if (confirmation === 'accept-high-risk') {
     return 'Accept trusted host code after apply'
   }
