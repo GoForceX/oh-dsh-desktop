@@ -40,6 +40,7 @@ const translations = {
             "Oh-DSH 完全开源。可前往 GitHub 点亮 Star 并继续下载，或直接使用 AtomGit 镜像；国内网络下可能更快。",
         detectedPlatform: "已识别当前平台",
         starAndDownload: "去 GitHub Star，并继续下载",
+        githubDirectDownload: "直接从 GitHub 下载",
         atomgitMirrorDownload: "从 AtomGit 镜像下载",
         unknownPlatform: "其他平台",
         footer: "开放、可组合的 DeepSeek Harness 工作台",
@@ -72,6 +73,7 @@ const translations = {
             "Oh-DSH is fully open source. Star it on GitHub and continue downloading, or use the AtomGit mirror directly; it may be faster in mainland China.",
         detectedPlatform: "Detected platform",
         starAndDownload: "Star on GitHub and continue",
+        githubDirectDownload: "Download directly from GitHub",
         atomgitMirrorDownload: "Download from AtomGit mirror",
         unknownPlatform: "Other platform",
         footer: "An open, composable DeepSeek Harness workbench",
@@ -100,6 +102,7 @@ const elements = {
     particles: document.querySelector("[data-harness-particles]"),
     qqGroupLink: document.querySelector("[data-qq-group-link]"),
     starCount: document.querySelector("[data-star-count]"),
+    starDownload: document.querySelector("[data-star-download]"),
 };
 
 const installCommands = {
@@ -356,16 +359,24 @@ function chooseReleaseAsset(assets) {
     })[0];
 }
 
-function loadReleaseDownload(apiUrl, fallbackUrl, element) {
+function setDownloadUrls(elements, url) {
+    elements.forEach((element) => {
+        element.href = url;
+    });
+}
+
+function loadReleaseDownloads(apiUrl, fallbackUrl, elements) {
     return fetch(apiUrl)
         .then((response) => (response.ok ? response.json() : Promise.reject()))
         .then((release) => {
             const asset = chooseReleaseAsset(release.assets ?? []);
-            element.href =
-                asset?.browser_download_url ?? release.html_url ?? fallbackUrl;
+            setDownloadUrls(
+                elements,
+                asset?.browser_download_url ?? release.html_url ?? fallbackUrl,
+            );
         })
         .catch(() => {
-            element.href = fallbackUrl;
+            setDownloadUrls(elements, fallbackUrl);
         });
 }
 
@@ -472,7 +483,7 @@ if (elements.qqGroupLink) {
     elements.qqGroupLink.addEventListener("click", openQqGroup);
 }
 
-elements.githubDownload.addEventListener("click", () => {
+elements.starDownload.addEventListener("click", () => {
     window.open(repositoryUrl, "_blank", "noopener,noreferrer");
 });
 
@@ -594,15 +605,15 @@ if (typeof fetch === "function") {
         : Promise.resolve();
 
     architecturePromise.then(() => {
-        void loadReleaseDownload(
+        void loadReleaseDownloads(
             atomgitReleaseApiUrl,
             atomgitReleasesUrl,
-            elements.atomgitDownload,
+            [elements.atomgitDownload],
         );
-        void loadReleaseDownload(
+        void loadReleaseDownloads(
             releaseApiUrl,
             latestReleaseUrl,
-            elements.githubDownload,
+            [elements.starDownload, elements.githubDownload],
         );
     });
 }
