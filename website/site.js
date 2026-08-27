@@ -613,7 +613,11 @@ if (typeof fetch === "function") {
         void loadReleaseDownloads(
             releaseApiUrl,
             latestReleaseUrl,
-            [elements.starDownload, elements.githubDownload],
+            [
+                elements.downloadTrigger,
+                elements.starDownload,
+                elements.githubDownload,
+            ],
         );
     });
 }
