@@ -35,6 +35,11 @@ import {
   createMarketplaceHttpBridge,
   waitForMarketplaceRestart,
 } from '../plugins/plugin-marketplace/src/client/http.ts'
+import {
+  formatMarketplaceCount,
+  formatMarketplaceDate,
+  marketplaceRepositoryDetails,
+} from '../plugins/plugin-marketplace/src/client/repository-metadata.ts'
 import type {
   MarketplacePreviewProxyContext,
 } from '../plugins/plugin-marketplace/src/host/preview-proxy.ts'
@@ -96,6 +101,15 @@ function catalogDocument(): unknown {
   }
 }
 
+test('repository metadata formatters handle compact counts and invalid dates', () => {
+  assert.equal(formatMarketplaceCount(1_250, 'en'), '1.3K')
+  assert.equal(formatMarketplaceCount(null), null)
+  assert.equal(formatMarketplaceCount(-1), null)
+  assert.equal(formatMarketplaceDate(null, 'en', 'Unknown'), 'Unknown')
+  assert.equal(formatMarketplaceDate('not-a-date', 'en', 'Unknown'), 'Unknown')
+  assert.notEqual(formatMarketplaceDate('2026-08-27T12:00:00Z', 'en', 'Unknown'), 'Unknown')
+})
+
 class FakePlatform implements MarketplacePlatform {
   readonly builds: Array<{
     checkout: string
@@ -124,6 +138,8 @@ class FakePlatform implements MarketplacePlatform {
   async cloneRepository(_repository: string, _commit: string, target: string): Promise<void> {
     mkdirSync(target, { recursive: true })
   }
+
+  async loadRepositoryStats(_repository: string): Promise<import('../plugins/plugin-marketplace/src/protocol.ts').MarketplaceRepositoryStats | null> { return null }
 
   async loadCatalog(options: LoadCatalogOptions = {}): Promise<unknown> {
     this.catalogLoads.push(options)
@@ -912,6 +928,93 @@ test('web restart wait observes the old host leave and the new host arrive', asy
     fetcher as unknown as typeof fetch,
   )
   assert.equal(calls, 4)
+})
+
+test('TUI repository metadata includes every fetched field', async () => {
+  const plugin = parseMarketplaceCatalog({
+    schema: 'dsh-external-hub/v0.1',
+    repos: [{
+      name: 'tui-demo',
+      repo: 'example/tui-demo',
+      category: 'plugin',
+      description: 'TUI demo',
+      bundle: true,
+      stats: {
+        forks: 5,
+        language: 'TypeScript',
+        license: 'MIT License',
+        openIssues: 7,
+        stars: 42,
+        updatedAt: '2026-08-27T12:00:00Z',
+      },
+    }],
+  }).plugins[0]
+  assert.notEqual(plugin, undefined)
+  if (plugin === undefined) return
+
+  const lines = marketplaceRepositoryDetails(plugin)
+  assert.match(lines.join('\n'), /★ 42/)
+  assert.match(lines.join('\n'), /forks 5/)
+  assert.match(lines.join('\n'), /issues \+ PRs 7/)
+  assert.match(lines.join('\n'), /TypeScript/)
+  assert.match(lines.join('\n'), /MIT License/)
+  assert.doesNotMatch(lines.join('\n'), /updated: unknown/)
+})
+
+test('TUI marketplace loads repository metadata when details open', async () => {
+  const plugin = parseMarketplaceCatalog({
+    schema: 'dsh-external-hub/v0.1',
+    repos: [{
+      name: 'tui-demo',
+      repo: 'example/tui-demo',
+      category: 'plugin',
+      description: 'TUI demo',
+      bundle: true,
+    }],
+  }).plugins[0]
+  assert.notEqual(plugin, undefined)
+  if (plugin === undefined) return
+  const snapshot: MarketplaceSnapshot = {
+    auth: { detail: '', status: 'ready' },
+    busy: false,
+    catalog: [plugin],
+    catalogGeneratedAt: null,
+    error: null,
+    installed: [],
+    lastAction: null,
+    lifecycle: { candidate: null, current: { profile: 'tui', state: 'live' }, previous: null },
+    plan: null,
+    preview: null,
+    sourceLocks: [],
+    undoAvailable: false,
+  }
+  const stats = {
+    forks: 5,
+    language: 'TypeScript',
+    license: 'MIT License',
+    openIssues: 7,
+    stars: 42,
+    updatedAt: '2026-08-27T12:00:00Z',
+  }
+  const commands: unknown[] = []
+  const controller = new TuiMarketplaceController({
+    getSnapshot: async () => snapshot,
+    dispatch: async (command): Promise<MarketplaceSnapshot> => {
+      commands.push(command)
+      return { ...snapshot, catalog: [{ ...plugin, stats }] }
+    },
+  })
+
+  await controller.load()
+  controller.openDetail(plugin.id)
+  await new Promise<void>(resolve => { setImmediate(resolve) })
+
+  assert.deepEqual(commands, [{ type: 'load-repository-stats', pluginId: plugin.id }])
+  assert.deepEqual(controller.selectedPlugin()?.stats, stats)
+  controller.openDetail(null)
+  controller.openDetail(plugin.id)
+  await new Promise<void>(resolve => { setImmediate(resolve) })
+  assert.equal(commands.length, 1)
 })
 
 test('TUI marketplace collects explicit risk confirmations before preview', async () => {

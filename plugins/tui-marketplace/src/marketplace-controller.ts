@@ -33,6 +33,7 @@ export class TuiMarketplaceController {
   readonly #bridge: PluginMarketplaceBridge
   readonly #onBeforeRestart: (() => void) | undefined
   readonly #listeners = new Set<() => void>()
+  readonly #requestedRepositoryStats = new Set<string>()
   #state: TuiMarketplaceState = {
     acceptedConfirmations: [],
     busy: false,
@@ -104,6 +105,12 @@ export class TuiMarketplaceController {
       selectedId: pluginId,
     }
     this.emit()
+    if (pluginId === null) return
+    const plugin = this.#state.snapshot?.catalog.find(candidate => candidate.id === pluginId)
+    if (plugin?.stats === null && !this.#requestedRepositoryStats.has(pluginId)) {
+      this.#requestedRepositoryStats.add(pluginId)
+      void this.dispatch({ type: 'load-repository-stats', pluginId })
+    }
   }
 
   async load(): Promise<void> {

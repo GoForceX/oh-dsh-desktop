@@ -5,6 +5,7 @@ import type {
   MarketplaceConfirmation,
   MarketplacePlugin,
 } from '../../plugin-marketplace/src/protocol.ts'
+import { marketplaceRepositoryDetails } from '../../plugin-marketplace/src/client/repository-metadata.ts'
 import {
   type TuiMarketplaceController,
   surfaceMarker,
@@ -26,6 +27,7 @@ function confirmationLabel(confirmation: MarketplaceConfirmation): string {
   }
   return 'Accept the changed source identity'
 }
+
 
 function pluginBadges(plugin: MarketplacePlugin): string {
   const badges: string[] = []
@@ -222,6 +224,10 @@ function renderDetail(
       `repository: ${plugin.url.replace('https://github.com/', '')}`,
       columns,
     )),
+    ...marketplaceRepositoryDetails(plugin).map(line => h(Text, {
+      color: 'subtle',
+      key: line,
+    }, clip(line, columns))),
     plan === null
       ? null
       : h(Box, { marginTop: 1 }, h(Text, { color: 'warning' }, clip(

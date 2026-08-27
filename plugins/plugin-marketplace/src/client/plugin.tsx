@@ -25,6 +25,10 @@ import type {
   MarketplaceSurfaceSupport,
 } from '../protocol.ts'
 import { MARKETPLACE_MESSAGES, type MarketplaceMessage } from './i18n.ts'
+import {
+  formatMarketplaceDate,
+  marketplaceRepositoryStats,
+} from './repository-metadata.ts'
 import marketplaceCss from './marketplace.css'
 import {
   initialSessionNavigationState,
@@ -537,6 +541,11 @@ function PluginCard({
         </div>
       </div>
       <p className="oh-marketplace-card-description">{plugin.description}</p>
+      {plugin.stats !== null && (
+        <div className="oh-marketplace-card-stats" aria-label={t('github-stats')}>
+          {marketplaceRepositoryStats(plugin).map(stat => <span key={stat}>{stat}</span>)}
+        </div>
+      )}
       <div className="oh-marketplace-card-footer">
         <span
           className="oh-marketplace-pill"
@@ -623,11 +632,12 @@ function PluginDetail({
           <dt>{t('category')}</dt><dd>{plugin.category}</dd>
           <dt>{t('mechanism')}</dt><dd>{mechanismLabel(plugin, t)}</dd>
           <dt>{t('updated')}</dt>
-          <dd>
-            {plugin.pushedAt === null
-              ? t('unknown')
-              : new Date(plugin.pushedAt).toLocaleString(localeTag(locale))}
-          </dd>
+          <dd>{formatMarketplaceDate(plugin.stats?.updatedAt ?? plugin.pushedAt, localeTag(locale), t('unknown'))}</dd>
+          <dt>{t('stars')}</dt><dd>{plugin.stats?.stars ?? t('unknown')}</dd>
+          <dt>{t('forks')}</dt><dd>{plugin.stats?.forks ?? t('unknown')}</dd>
+          <dt>{t('open-issues')}</dt><dd>{plugin.stats?.openIssues ?? t('unknown')}</dd>
+          <dt>{t('language')}</dt><dd>{plugin.stats?.language ?? t('unknown')}</dd>
+          <dt>{t('license')}</dt><dd>{plugin.stats?.license ?? t('unknown')}</dd>
           <dt>{t('surfaces')}</dt><dd>{surfaceSupportLabel(plugin, t)}</dd>
           <dt>{t('repository')}</dt><dd>{plugin.url.replace('https://github.com/', '')}</dd>
           <dt>{t('trust')}</dt><dd>{t(`trust.${plugin.trust}`)}</dd>
@@ -822,6 +832,7 @@ function MarketplaceSurface({ bridge, locale, translate, view }: {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const openedPreviewRef = useRef<string | null>(null)
   const previewReservationRef = useRef<MarketplacePreviewReservation | null>(null)
+  const requestedStatsRef = useRef(new Set<string>())
 
   const run = useCallback(async (command: MarketplaceCommand): Promise<void> => {
     setPending(true)
@@ -900,6 +911,14 @@ function MarketplaceSurface({ bridge, locale, translate, view }: {
   }, [categoryFilter, search, snapshot?.catalog, statusFilter])
   const selected = plugins.find(plugin => plugin.id === selectedId) ?? null
   const error = localError ?? snapshot?.error ?? null
+
+  useEffect(() => {
+    if (selectedId === null || snapshot === null) return
+    const plugin = snapshot.catalog.find(candidate => candidate.id === selectedId)
+    if (plugin === undefined || plugin.stats !== null || requestedStatsRef.current.has(selectedId)) return
+    requestedStatsRef.current.add(selectedId)
+    void run({ type: 'load-repository-stats', pluginId: selectedId })
+  }, [run, selectedId, snapshot?.catalog])
   const resetView = (): void => {
     setSearch('')
     setStatusFilter('all')
@@ -908,7 +927,10 @@ function MarketplaceSurface({ bridge, locale, translate, view }: {
   }
 
   useEffect(() => {
-    if (viewState.open) resetView()
+    if (viewState.open) {
+      requestedStatsRef.current.clear()
+      resetView()
+    }
   }, [viewState.open])
 
   useEffect(() => {
