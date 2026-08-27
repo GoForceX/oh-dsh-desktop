@@ -657,12 +657,23 @@ html:lang(zh-CN) .hero-title-surfaces {
 }
 
 .dialog-primary {
+    gap: 9px;
     color: #0a0d14;
     background: #f5f7fb;
 }
 
 .dialog-primary:hover {
     background: #ffffff;
+}
+
+.dialog-primary svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.7;
 }
 
 .dialog-secondary {

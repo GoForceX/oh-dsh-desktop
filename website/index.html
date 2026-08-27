@@ -253,14 +253,14 @@
             </button>
             <p class="dialog-kicker" data-i18n="downloadReady">准备下载</p>
             <h2 id="download-dialog-title" data-i18n="downloadTitle">
-                选择下载渠道
+                下载前，顺手点亮一颗 Star？
             </h2>
             <p
                 id="download-dialog-description"
                 class="dialog-description"
                 data-i18n="downloadDescription"
             >
-                请选择适合当前网络的渠道；国内网络可优先尝试 AtomGit。
+                Oh-DSH 完全开源。可前往 GitHub 点亮 Star 并继续下载，或直接使用 AtomGit 镜像；国内网络下可能更快。
             </p>
             <p class="detected-platform">
                 <span data-i18n="detectedPlatform">已识别当前平台</span>
@@ -269,18 +269,23 @@
             <div class="dialog-actions">
                 <a
                     class="dialog-primary"
-                    href="https://atomgit.com/hust-open-atom-club/oh-dsh/releases"
-                    data-atomgit-download
+                    href="https://github.com/hust-open-atom-club/oh-dsh/releases/latest"
+                    data-github-download
                 >
-                    <span data-i18n="atomgitDownload">从 AtomGit 下载</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                            d="m12 2.8 2.8 5.7 6.3.9-4.6 4.4 1.1 6.3-5.6-3-5.6 3 1.1-6.3-4.6-4.4 6.3-.9L12 2.8Z"
+                        ></path>
+                    </svg>
+                    <span data-i18n="starAndDownload">去 GitHub Star，并继续下载</span>
                 </a>
                 <a
                     class="dialog-secondary"
-                    href="https://github.com/hust-open-atom-club/oh-dsh/releases/latest"
-                    data-github-download
-                    data-i18n="githubDownload"
+                    href="https://atomgit.com/hust-open-atom-club/oh-dsh/releases"
+                    data-atomgit-download
+                    data-i18n="atomgitMirrorDownload"
                 >
-                    从 GitHub 下载
+                    从 AtomGit 镜像下载
                 </a>
             </div>
         </dialog>

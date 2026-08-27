@@ -35,12 +35,12 @@ const translations = {
         copyCommand: "复制",
         copiedCommand: "已复制",
         downloadReady: "准备下载",
-        downloadTitle: "选择下载渠道",
+        downloadTitle: "下载前，顺手点亮一颗 Star？",
         downloadDescription:
-            "请选择适合当前网络的渠道；国内网络可优先尝试 AtomGit。",
+            "Oh-DSH 完全开源。可前往 GitHub 点亮 Star 并继续下载，或直接使用 AtomGit 镜像；国内网络下可能更快。",
         detectedPlatform: "已识别当前平台",
-        atomgitDownload: "从 AtomGit 下载",
-        githubDownload: "从 GitHub 下载",
+        starAndDownload: "去 GitHub Star，并继续下载",
+        atomgitMirrorDownload: "从 AtomGit 镜像下载",
         unknownPlatform: "其他平台",
         footer: "开放、可组合的 DeepSeek Harness 工作台",
         qqGroup: "QQ 群",
@@ -67,12 +67,12 @@ const translations = {
         copyCommand: "Copy",
         copiedCommand: "Copied",
         downloadReady: "Ready to download",
-        downloadTitle: "Choose a download source",
+        downloadTitle: "Before you go, leave us a Star?",
         downloadDescription:
-            "Choose the source that works best for your network. AtomGit may be faster in mainland China.",
+            "Oh-DSH is fully open source. Star it on GitHub and continue downloading, or use the AtomGit mirror directly; it may be faster in mainland China.",
         detectedPlatform: "Detected platform",
-        atomgitDownload: "Download from AtomGit",
-        githubDownload: "Download from GitHub",
+        starAndDownload: "Star on GitHub and continue",
+        atomgitMirrorDownload: "Download from AtomGit mirror",
         unknownPlatform: "Other platform",
         footer: "An open, composable DeepSeek Harness workbench",
         qqGroup: "QQ Group",
@@ -471,6 +471,10 @@ function openQqGroup(event) {
 if (elements.qqGroupLink) {
     elements.qqGroupLink.addEventListener("click", openQqGroup);
 }
+
+elements.githubDownload.addEventListener("click", () => {
+    window.open(repositoryUrl, "_blank", "noopener,noreferrer");
+});
 
 function cachedDownloadCount() {
     try {
