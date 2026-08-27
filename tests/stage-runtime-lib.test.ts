@@ -11,7 +11,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { test } from 'node:test'
 import {
   ALL_SURFACE_PACKAGE_NAMES,
@@ -388,7 +388,7 @@ test('stagePnpmIntoNodeRuntime builds the published runtime layout', () => {
     assert.equal(existsSync(join(nodeRuntime, 'lib', 'node_modules', 'pnpm', 'dist', 'pnpm.mjs')), true)
     assert.equal(existsSync(join(nodeRuntime, 'lib', 'node_modules', 'pnpm', 'package.json')), true)
     assert.equal(existsSync(join(nodeRuntime, 'lib', 'node_modules', 'pnpm', 'LICENSE')), true)
-    assert.equal(readlinkSync(join(nodeRuntime, 'bin', 'pnpm')), '../lib/node_modules/pnpm/bin/pnpm.mjs')
+    assert.equal(readlinkSync(join(nodeRuntime, 'bin', 'pnpm')), relative(dirname(join(nodeRuntime, 'bin', 'pnpm')), entry))
     if (process.platform !== 'win32') {
       assert.equal(statSync(entry).mode & 0o777, 0o755, 'published pnpm entry stays executable')
     }
