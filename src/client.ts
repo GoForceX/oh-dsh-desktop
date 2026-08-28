@@ -36,8 +36,10 @@ declare global {
 }
 
 const DESKTOP_CHROME_CSS = `
-html[data-oh-dsh-desktop-platform='darwin'],
-html[data-oh-dsh-desktop-platform='win32'] {
+/* Every desktop surface publishes the chrome row height. macOS and Windows
+   spend it on the in-page title bar; framed platforms spend it inside the
+   frame, where the floating panel toolbar lives. */
+html[data-oh-dsh-desktop='true'] {
   --oh-dsh-titlebar-height: ${DESKTOP_TITLEBAR_HEIGHT}px;
 }
 

@@ -7,6 +7,8 @@ test('desktop chrome keeps platform title bars and panel controls distinct', () 
   const client = readFileSync(new URL('../src/client.ts', import.meta.url), 'utf8')
   const contracts = readFileSync(new URL('../src/contracts.ts', import.meta.url), 'utf8')
   const panelCss = readFileSync(new URL('../plugins/sidebar/src/client/sidebar.css', import.meta.url), 'utf8')
+  const frame = readFileSync(new URL('../plugins/desktop-frame/src/client/plugin.tsx', import.meta.url), 'utf8')
+  const sidePanel = readFileSync(new URL('../plugins/sidebar/src/client/SideToolsPanel.tsx', import.meta.url), 'utf8')
   const webPatch = readFileSync(new URL('../web/cordis.patch.yml', import.meta.url), 'utf8')
 
   // Windows uses a frameless native window; the renderer owns the single
@@ -33,6 +35,22 @@ test('desktop chrome keeps platform title bars and panel controls distinct', () 
   assert.doesNotMatch(client, /data-oh-dsh-desktop='true'\] body \{[\s\S]*?border-radius:/)
   assert.doesNotMatch(webPatch, /@oh-dsh\/desktop'/)
 
+  // Every desktop surface publishes the same chrome row height, and the frame
+  // publishes the details column width on the root element: floating chrome
+  // lives outside the frame and can only inherit the value from there.
+  assert.match(
+    client,
+    /html\[data-oh-dsh-desktop='true'\] \{[\s\S]*?--oh-dsh-titlebar-height: \$\{DESKTOP_TITLEBAR_HEIGHT\}px/,
+  )
+  assert.match(
+    frame,
+    /root\.style\.setProperty\('--oh-dsh-details-width', `\$\{cols\.details\}px`\)/,
+  )
+  assert.match(
+    frame,
+    /root\.style\.removeProperty\('--oh-dsh-details-width'\)/,
+  )
+
   // macOS gets a real drag island between traffic lights and panel controls.
   assert.match(client, /if \(platform === 'darwin'\)[\s\S]*?oh-dsh-titlebar-drag-region/)
   assert.match(client, /dragRegion\?\.remove\(\)/)
@@ -42,10 +60,44 @@ test('desktop chrome keeps platform title bars and panel controls distinct', () 
     /data-oh-dsh-desktop-platform='darwin'\] \.oh-dsh-titlebar-drag-region \{[\s\S]*?left: 88px;[\s\S]*?right: 112px;[\s\S]*?-webkit-app-region: drag/,
   )
 
-  // Web and framed Linux keep the shared top-right position. macOS uses a
-  // compact, evenly inset toolbar; only frameless Windows reserves space for
-  // its three custom window actions.
-  assert.match(panelCss, /\.oh-dsh-panel-toolbar \{[\s\S]*?top: 5px;[\s\S]*?right: 14px;/)
+  // Web and framed Linux keep the shared top-right position, inset by the
+  // width of an open session details column so the toolbar never lands on the
+  // session log header. macOS uses a compact, evenly inset toolbar; only
+  // frameless Windows reserves space for its three custom window actions.
+  assert.match(
+    panelCss,
+    /\.oh-dsh-panel-toolbar \{[\s\S]*?top: 5px;[\s\S]*?right: min\([\s\S]*?max\([\s\S]*?14px,[\s\S]*?8px[\s\S]*?var\(--oh-dsh-details-width, 0px\)[\s\S]*?var\(--oh-dsh-session-inset, 0px\)[\s\S]*?var\(--oh-dsh-workspace-panel-inset, 0px\)[\s\S]*?calc\(100vw - 460px\)/,
+  )
+  // The side tools panel squeezes the conversation column, so it publishes the
+  // footprint it takes and the toolbar adds it to the session inset.
+  assert.match(
+    sidePanel,
+    /style\.setProperty\([\s\S]*?'--oh-dsh-workspace-panel-inset',[\s\S]*?\$\{Math\.round\(width \+ \(globalThis\.innerWidth - right\)\)\}px/,
+  )
+  assert.match(
+    sidePanel,
+    /root\.style\.setProperty\('--oh-dsh-workspace-panel-inset', '0px'\)/,
+  )
+  // A maximized panel owns the whole row, so no inset can clear it: the
+  // toolbar drops to the bottom corner instead of hovering mid-panel, and
+  // stays reachable because the panel header has no restore control.
+  assert.match(sidePanel, /dataset\.ohDshSidePanelMaximized = 'true'/)
+  assert.match(
+    panelCss,
+    /html\[data-oh-dsh-side-panel-maximized='true'\] \.oh-dsh-panel-toolbar \{[\s\S]*?top: auto;[\s\S]*?bottom: 14px;[\s\S]*?right: 14px/,
+  )
+  // An active session parks a Session log control in that same corner, so the
+  // toolbar stands down by the published inset and matches its row.
+  assert.match(panelCss, /--oh-dsh-session-bar-inset: 139px;/)
+  assert.match(
+    panelCss,
+    /html\[data-oh-dsh-session-active='true'\] \{[\s\S]*?--oh-dsh-session-inset: var\(--oh-dsh-session-bar-inset, 139px\)/,
+  )
+  assert.match(
+    panelCss,
+    /html\[data-oh-dsh-session-active='true'\] \.oh-dsh-panel-toolbar \{[\s\S]*?top: 11px/,
+  )
+  assert.match(frame, /dataset\.ohDshSessionActive = 'true'/)
   assert.match(
     client,
     /data-oh-dsh-desktop-platform='darwin'\] \.oh-dsh-panel-toolbar,[\s\S]*?data-oh-dsh-desktop-platform='win32'\] \.oh-dsh-panel-toolbar \{[\s\S]*?top: 4px;[\s\S]*?padding: 1px/,
