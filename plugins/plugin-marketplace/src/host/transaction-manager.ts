@@ -37,11 +37,17 @@ import {
 import type { MarketplacePlatform } from './platform.ts'
 
 const STATE_VERSION = 2
+
 const MANAGED_DIRECTORY = '.oh-dsh'
+
 const STATE_FILE = 'marketplace.json'
+
 const PATCH_BEGIN = '# >>> Oh-DSH-Desktop plugin marketplace'
+
 const PATCH_END = '# <<< Oh-DSH-Desktop plugin marketplace'
+
 const BUILD_BEGIN = '# >>> Oh-DSH-Desktop allowed plugin builds'
+
 const BUILD_END = '# <<< Oh-DSH-Desktop allowed plugin builds'
 
 interface MarketplaceStateFile {
@@ -657,6 +663,7 @@ export class PluginMarketplaceManager {
   #busy = false
   #catalog: MarketplacePlugin[] = []
   #catalogGeneratedAt: string | null = null
+  readonly #repositoryStats = new Map<string, MarketplacePlugin['stats']>()
   #auth: MarketplaceSnapshot['auth'] = {
     detail: 'Plugin catalog has not been refreshed yet.',
     status: 'error',
@@ -709,6 +716,7 @@ export class PluginMarketplaceManager {
           enabled,
           installed: receipt !== undefined,
           latestCommit,
+          stats: this.#repositoryStats.get(plugin.repository) ?? plugin.stats,
           updateAvailable: receipt !== undefined
             && latestCommit !== null
             && latestCommit !== receipt.resolvedCommit,
@@ -742,7 +750,9 @@ export class PluginMarketplaceManager {
     principal: MarketplaceDispatchPrincipal = 'human-ui',
   ): Promise<MarketplaceSnapshot> {
     if (this.#busy) return this.getSnapshot()
-    if (this.#options.readOnly === true && command.type !== 'refresh') {
+    if (this.#options.readOnly === true
+      && command.type !== 'refresh'
+      && command.type !== 'load-repository-stats') {
       this.#lastAction = command.type
       this.#error = 'The marketplace is read-only while another Oh-DSH surface holds the runtime lock.'
       return this.getSnapshot()
@@ -753,6 +763,9 @@ export class PluginMarketplaceManager {
       switch (command.type) {
         case 'refresh':
           await this.refresh(command.force === true)
+          break
+        case 'load-repository-stats':
+          await this.loadRepositoryStats(command.pluginId)
           break
         case 'inspect':
           await this.inspect(command.action, command.pluginId)
@@ -798,6 +811,7 @@ export class PluginMarketplaceManager {
     this.#catalog = catalog.plugins
     this.#catalogGeneratedAt = catalog.generatedAt
     this.#latestCommits.clear()
+    this.#repositoryStats.clear()
     const available = new Map(catalog.plugins
       .filter(plugin => plugin.mechanism !== 'unsupported')
       .map(plugin => [plugin.id, plugin.repository]))
@@ -814,6 +828,13 @@ export class PluginMarketplaceManager {
         }
       }))
     this.#lastAction = `Loaded ${String(catalog.plugins.length)} catalog plugins.`
+  }
+
+  private async loadRepositoryStats(pluginId: string): Promise<void> {
+    const plugin = this.#catalog.find(candidate => candidate.id === pluginId)
+    if (plugin === undefined) throw new Error(`plugin is not present in the loaded catalog: ${pluginId}`)
+    const stats = await this.#options.platform.loadRepositoryStats(plugin.repository)
+    if (stats !== null) this.#repositoryStats.set(plugin.repository, stats)
   }
 
   private async prepare(action: MarketplaceAction, pluginId: string): Promise<void> {
