@@ -22,7 +22,6 @@ import {
   win32,
 } from 'node:path'
 import { parseMarketplaceCatalog } from '../catalog.ts'
-import { landlockPreviewCommand } from '../../../../src/landlock-launcher.ts'
 import type { MarketplaceAuthStatus, MarketplaceRepositoryStats } from '../protocol.ts'
 import {
   MARKETPLACE_CATALOG_PATH,
@@ -399,18 +398,16 @@ export function previewSandboxPolicy(root: string): string {
   ].join('')
 }
 
-interface PreviewScriptCommandInput {
-  nodeArguments: string[]
-  nodeBinary: string
+export interface PreviewRuntimeLauncherInput {
   pathExists?: (path: string) => boolean
   platform?: NodeJS.Platform
   root: string
   sandbox?: string | undefined
 }
 
-/** Select a write-restricted launcher or reject the scripted preview. */
-export function previewScriptCommand(
-  input: PreviewScriptCommandInput,
+/** Seatbelt on macOS, Landlock on Linux, otherwise fail closed. */
+export function previewRuntimeLauncher(
+  input: PreviewRuntimeLauncherInput,
 ): { args: string[]; command: string } {
   const platform = input.platform ?? process.platform
   const pathExists = input.pathExists ?? existsSync
@@ -423,21 +420,35 @@ export function previewScriptCommand(
       )
     }
     return {
-      args: ['-p', previewSandboxPolicy(input.root), input.nodeBinary, ...input.nodeArguments],
+      args: ['-p', previewSandboxPolicy(input.root)],
       command: sandbox,
     }
   }
   if (platform === 'linux' && sandbox !== undefined && pathExists(sandbox)) {
-    return landlockPreviewCommand({
-      launcher: sandbox,
-      nodeBinary: input.nodeBinary,
-      nodeArguments: input.nodeArguments,
-      root: input.root,
-    })
+    return {
+      command: sandbox,
+      args: ['--ro', '/', '--rw', input.root, '--rw', '/dev/null', '--'],
+    }
   }
   throw new Error(
     `scripted marketplace previews require a write-restricted process sandbox, which is unavailable on ${platform}`,
   )
+}
+
+interface PreviewScriptCommandInput extends PreviewRuntimeLauncherInput {
+  nodeArguments: string[]
+  nodeBinary: string
+}
+
+/** Select a write-restricted launcher or reject the scripted preview. */
+export function previewScriptCommand(
+  input: PreviewScriptCommandInput,
+): { args: string[]; command: string } {
+  const launcher = previewRuntimeLauncher(input)
+  return {
+    args: [...launcher.args, input.nodeBinary, ...input.nodeArguments],
+    command: launcher.command,
+  }
 }
 
 export class ProductionMarketplacePlatform implements MarketplacePlatform {

@@ -16,6 +16,8 @@ import type {
 import {
   findGitHubCli,
   MARKETPLACE_CATALOG_CACHE_TTL_MS,
+  previewRuntimeLauncher,
+  previewSandboxPolicy,
   previewScriptCommand,
   ProductionMarketplacePlatform,
   withGitHubCredentials,
@@ -47,7 +49,7 @@ import {
   MarketplacePreviewProxy,
   MARKETPLACE_WEB_PREVIEW_PATH,
 } from '../plugins/plugin-marketplace/src/host/preview-proxy.ts'
-import type { MarketplaceSnapshot } from '../plugins/plugin-marketplace/src/protocol.ts'
+import type { MarketplaceRepositoryStats, MarketplaceSnapshot } from '../plugins/plugin-marketplace/src/protocol.ts'
 import { TuiMarketplaceController } from '../plugins/tui-marketplace/src/marketplace-controller.ts'
 
 const COMMIT = '0123456789abcdef0123456789abcdef01234567'
@@ -143,7 +145,7 @@ class FakePlatform implements MarketplacePlatform {
     mkdirSync(target, { recursive: true })
   }
 
-  async loadRepositoryStats(_repository: string): Promise<import('../plugins/plugin-marketplace/src/protocol.ts').MarketplaceRepositoryStats | null> { return null }
+  async loadRepositoryStats(_repository: string): Promise<MarketplaceRepositoryStats | null> { return null }
 
   async loadCatalog(options: LoadCatalogOptions = {}): Promise<unknown> {
     this.catalogLoads.push(options)
@@ -789,6 +791,15 @@ test('scripted bundle previews use Linux Landlock and fail closed without it', (
     platform: 'darwin',
     root: '/preview',
   }), /unavailable on darwin/)
+  const darwinRuntime = previewRuntimeLauncher({
+    pathExists: () => true,
+    platform: 'darwin',
+    root: '/preview',
+  })
+  assert.deepEqual(darwinRuntime, {
+    command: '/usr/bin/sandbox-exec',
+    args: ['-p', previewSandboxPolicy('/preview')],
+  })
 })
 
 test('refresh keeps public catalogs available when GitHub CLI is unavailable', async () => {
@@ -1077,6 +1088,7 @@ test('TUI marketplace collects explicit risk confirmations before preview', asyn
         ...snapshot,
         preview: {
           action: 'install',
+          isolated: true,
           pluginId: 'tui-demo',
           previewUrl: null,
           resolvedCommit: COMMIT,
@@ -1322,7 +1334,12 @@ test('bundle preview remains isolated until apply and supports undo', async () =
     snapshot = await setup.manager.dispatch({ type: 'preview', confirmations: ["allow-build-scripts"] })
     assert.equal(snapshot.error, null)
     assert.equal(snapshot.preview?.pluginId, 'bundle-demo')
+    assert.equal(snapshot.preview?.isolated, true)
     assert.equal(setup.platform.builds.length, 1)
+    assert.equal(setup.platform.builds[0]?.sandboxed, true)
+    assert.equal(setup.platform.commands[0]?.sandboxed, true)
+    assert.equal(setup.platform.commands[1]?.sandboxed, true)
+    assert.equal(setup.runtime.previewStarts[0]?.sandboxed, true)
     assert.deepEqual(setup.platform.builds[0]?.scripts, ['prepare'])
     const build = setup.platform.builds[0]
     assert.equal(
@@ -1386,9 +1403,9 @@ test('safe actions prepare an isolated candidate in one transaction', async () =
     assert.equal(snapshot.plan?.sourceReview, 'first-use')
     assert.match(snapshot.plan?.manifestHash ?? '', /^[0-9a-f]{64}$/)
     assert.equal(snapshot.preview?.pluginId, 'safe-demo')
-    assert.equal(snapshot.lifecycle.candidate?.pluginId, 'safe-demo')
-    assert.equal(snapshot.lifecycle.current.profile, 'desktop')
-    assert.equal(snapshot.lifecycle.previous, null)
+    assert.equal(snapshot.preview?.isolated, true)
+    assert.equal(setup.runtime.previewStarts[0]?.sandboxed, true)
+    assert.equal(setup.platform.commands[0]?.sandboxed, true)
   } finally {
     setup.cleanup()
   }
@@ -1423,8 +1440,34 @@ test('unsandboxed builds require direct human approval', async () => {
     }, 'human-ui')
     assert.equal(snapshot.error, null)
     assert.equal(snapshot.preview?.pluginId, 'bundle-demo')
+    assert.equal(snapshot.preview?.isolated, false)
+    assert.match(snapshot.lastAction ?? '', /without process isolation/)
     assert.equal(setup.platform.builds.length, 1)
     assert.equal(setup.platform.builds[0]?.sandboxed, false)
+    assert.equal(setup.platform.commands[0]?.sandboxed, false)
+    assert.equal(setup.platform.commands[1]?.sandboxed, false)
+    assert.equal(setup.runtime.previewStarts[0]?.sandboxed, false)
+  } finally {
+    setup.cleanup()
+  }
+})
+
+test('scriptless previews stay usable when confinement is unavailable', async () => {
+  const setup = fixture()
+  try {
+    setup.platform.scriptSandboxAvailable = false
+    await setup.manager.dispatch({ type: 'refresh' })
+    const snapshot = await setup.manager.dispatch({
+      type: 'prepare',
+      action: 'install',
+      pluginId: 'safe-demo',
+    })
+    assert.equal(snapshot.error, null)
+    assert.deepEqual(snapshot.plan?.requirements, [])
+    assert.equal(snapshot.preview?.pluginId, 'safe-demo')
+    assert.equal(snapshot.preview?.isolated, false)
+    assert.equal(setup.platform.commands[0]?.sandboxed, false)
+    assert.equal(setup.runtime.previewStarts[0]?.sandboxed, false)
   } finally {
     setup.cleanup()
   }

@@ -808,6 +808,11 @@ function localizedHostMessage(
     const action = t(`action.${match[1] as 'install' | 'update' | 'enable' | 'disable' | 'uninstall'}`)
     return t('notice.preview-ready', { action, plugin: match[2] })
   }
+  match = /^(install|update|enable|disable|uninstall) preview is ready for (.+) without process isolation\.$/.exec(message)
+  if (match !== null) {
+    const action = t(`action.${match[1] as 'install' | 'update' | 'enable' | 'disable' | 'uninstall'}`)
+    return t('notice.preview-ready-unisolated', { action, plugin: match[2] })
+  }
   match = /^Discarded the (.+) preview without changing the profile\.$/.exec(message)
   if (match !== null) return t('notice.discarded', { plugin: match[1] })
   match = /^Applied (.+); the previous profile remains available for Undo\.$/.exec(message)
@@ -975,7 +980,7 @@ function MarketplaceSurface({ bridge, locale, translate, view }: {
           </header>
           {snapshot?.preview !== null && snapshot?.preview !== undefined && (
             <div className="oh-marketplace-preview-banner">
-              <strong>{t('preview.running', { plugin: snapshot.preview.pluginId })}</strong>
+              <strong>{t(snapshot.preview.isolated === false ? 'preview.running-unisolated' : 'preview.running', { plugin: snapshot.preview.pluginId })}</strong>
               <button className="oh-marketplace-button" disabled={pending} onClick={() => { void run({ type: 'discard' }) }} type="button">
                 {t('discard')}
               </button>

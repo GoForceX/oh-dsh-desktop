@@ -87,6 +87,7 @@ export type MarketplaceMessage =
   | 'refresh'
   | 'close'
   | 'preview.running'
+  | 'preview.running-unisolated'
   | 'discard'
   | 'apply'
   | 'apply-action'
@@ -105,6 +106,7 @@ export type MarketplaceMessage =
   | 'auth.not-refreshed'
   | 'notice.loaded'
   | 'notice.preview-ready'
+  | 'notice.preview-ready-unisolated'
   | 'notice.discarded'
   | 'notice.applied'
   | 'notice.restored'
@@ -197,6 +199,7 @@ export const MARKETPLACE_MESSAGES: LocaleMessages<MarketplaceMessage> = {
     refresh: 'Refresh',
     close: 'Close Plugins',
     'preview.running': '{plugin} is running in an isolated preview window.',
+    'preview.running-unisolated': '{plugin} is running in a preview without process isolation.',
     discard: 'Discard',
     apply: 'Apply to {target}',
     'apply-action': 'Apply {action}',
@@ -215,6 +218,7 @@ export const MARKETPLACE_MESSAGES: LocaleMessages<MarketplaceMessage> = {
     'auth.not-refreshed': 'Plugin catalog has not been refreshed yet.',
     'notice.loaded': 'Loaded {count} catalog plugins.',
     'notice.preview-ready': 'Isolated {action} preview is ready for {plugin}.',
+    'notice.preview-ready-unisolated': '{action} preview is ready for {plugin} without process isolation.',
     'notice.discarded': 'Discarded the {plugin} preview without changing the profile.',
     'notice.applied': 'Applied {plugin}; the previous profile remains available for Undo.',
     'notice.restored': 'Restored the profile from before {plugin} was applied.',
@@ -306,6 +310,7 @@ export const MARKETPLACE_MESSAGES: LocaleMessages<MarketplaceMessage> = {
     refresh: '刷新',
     close: '关闭插件市场',
     'preview.running': '{plugin} 正在隔离预览窗口中运行。',
+    'preview.running-unisolated': '{plugin} 正在没有进程隔离的预览中运行。',
     discard: '放弃',
     apply: '应用到 {target}',
     'apply-action': '应用{action}',
@@ -324,6 +329,7 @@ export const MARKETPLACE_MESSAGES: LocaleMessages<MarketplaceMessage> = {
     'auth.not-refreshed': '插件目录尚未刷新。',
     'notice.loaded': '已加载 {count} 个目录插件。',
     'notice.preview-ready': '{plugin} 的隔离{action}预览已就绪。',
+    'notice.preview-ready-unisolated': '{plugin} 的{action}预览已就绪，未使用进程隔离。',
     'notice.discarded': '已放弃 {plugin} 的预览，Profile 配置未发生更改。',
     'notice.applied': '已应用 {plugin}；之前的配置仍可撤销恢复。',
     'notice.restored': '已恢复应用 {plugin} 之前的配置。',

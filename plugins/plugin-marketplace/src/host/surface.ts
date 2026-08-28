@@ -7,7 +7,7 @@ import type {
   MarketplaceSnapshot,
   PluginMarketplaceBridge,
 } from '../protocol.ts'
-import { ProductionMarketplacePlatform } from './platform.ts'
+import { previewRuntimeLauncher, ProductionMarketplacePlatform } from './platform.ts'
 import {
   MarketplacePreviewProxy,
 } from './preview-proxy.ts'
@@ -131,19 +131,19 @@ export class SurfaceMarketplaceRuntime implements MarketplaceRuntime {
       OH_DSH_HOME: input.dshHome,
       TMPDIR: temporary,
     }
-    if (input.sandboxed && this.#sandboxLauncher === undefined) {
-      throw new Error(`scripted marketplace previews require a write-restricted process sandbox, which is unavailable on ${process.platform}`)
-    }
+    const launcher = input.sandboxed
+      ? previewRuntimeLauncher({
+        root: input.sandboxRoot,
+        sandbox: this.#sandboxLauncher,
+      })
+      : undefined
     const previewCommand = (args: string[]): { command: string; args: string[] } =>
-      input.sandboxed
-        ? {
-            command: this.#sandboxLauncher as string,
-            args: [
-              '--ro', '/', '--rw', input.sandboxRoot, '--rw', '/dev/null', '--',
-              this.#nodeBinary, this.#cliEntry, ...args,
-            ],
-          }
-        : { command: this.#nodeBinary, args: [this.#cliEntry, ...args] }
+      launcher === undefined
+        ? { command: this.#nodeBinary, args: [this.#cliEntry, ...args] }
+        : {
+          command: launcher.command,
+          args: [...launcher.args, this.#nodeBinary, this.#cliEntry, ...args],
+        }
     if (this.#kind === 'tui') {
       const { spawnSync } = await import('node:child_process')
       // Compose the candidate profile first so configuration errors fail
@@ -203,12 +203,7 @@ export class SurfaceMarketplaceRuntime implements MarketplaceRuntime {
         OH_DSH_MARKETPLACE_PREVIEW: '1',
       },
       nodeBinary: this.#nodeBinary,
-      ...(input.sandboxed && this.#sandboxLauncher !== undefined ? {
-        launcher: {
-          command: this.#sandboxLauncher,
-          args: ['--ro', '/', '--rw', input.sandboxRoot, '--rw', '/dev/null', '--'],
-        },
-      } : {}),
+      ...(launcher === undefined ? {} : { launcher }),
       readyTimeoutMs: 90_000,
     })
     const url = await supervisor.start()

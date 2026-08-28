@@ -162,6 +162,7 @@ export interface MarketplacePlan {
 
 export interface MarketplacePreview {
   action: MarketplaceAction
+  isolated: boolean
   pluginId: string
   previewUrl: string | null
   resolvedCommit: string

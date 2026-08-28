@@ -1014,6 +1014,8 @@ export class PluginMarketplaceManager {
     if (missing.length > 0) {
       throw new Error(`Preview requires explicit confirmation: ${missing.join(', ')}`)
     }
+    const sandboxAvailable = this.#options.platform.scriptSandboxAvailable !== false
+    const confineBuild = sandboxAvailable || !confirmations.includes('accept-unsandboxed-build')
     const transactionId = randomUUID()
     const root = join(this.#previewsRoot, transactionId)
     const candidateHome = join(root, 'dsh')
@@ -1049,7 +1051,7 @@ export class PluginMarketplaceManager {
         }
         if (existing?.mechanism === 'bundle'
           && (plan.mechanism !== 'bundle' || existing.packageName !== plan.packageName)) {
-          await this.removeBundle(candidateHome, candidateProfile, root, existing)
+          await this.removeBundle(candidateHome, candidateProfile, root, existing, sandboxAvailable)
         }
         if (plan.mechanism === 'bundle') {
           if (plan.packageName === null) throw new Error('bundle plan is missing its package name')
@@ -1079,7 +1081,7 @@ export class PluginMarketplaceManager {
               checkout: cloneTarget,
               sandboxRoot: root,
               scripts: scriptNames,
-              sandboxed: !confirmations.includes('accept-unsandboxed-build'),
+              sandboxed: confineBuild,
             })
             renameSync(cloneTarget, checkout)
           }
@@ -1087,7 +1089,7 @@ export class PluginMarketplaceManager {
             args: ['plugin', '--profile', this.#options.profile, 'add', checkout],
             dshHome: candidateHome,
             sandboxRoot: root,
-            sandboxed: !confirmations.includes('accept-unsandboxed-build'),
+            sandboxed: sandboxAvailable,
           })
           const manifest = readJson(join(candidateProfile, 'package.json'))
           if (!isRecord(manifest) || !isRecord(manifest.dependencies)
@@ -1099,6 +1101,7 @@ export class PluginMarketplaceManager {
             args: ['plugin', '--profile', this.#options.profile, 'install', '--ignore-scripts'],
             dshHome: candidateHome,
             sandboxRoot: root,
+            sandboxed: sandboxAvailable,
           })
           setBundleEnabled(candidateProfile, plan.packageName, preserveEnabled)
           assertPortableBundleProfile(candidateProfile, root)
@@ -1123,7 +1126,7 @@ export class PluginMarketplaceManager {
         const installed = existing
         if (installed === undefined) throw new Error(`${plan.pluginId} is no longer installed`)
         if (installed.mechanism === 'bundle') {
-          await this.removeBundle(candidateHome, candidateProfile, root, installed)
+          await this.removeBundle(candidateHome, candidateProfile, root, installed, sandboxAvailable)
         }
         updateRepositoryPatch(candidateProfile, remaining)
         writeMarketplaceState(candidateProfile, {
@@ -1155,6 +1158,7 @@ export class PluginMarketplaceManager {
       }
       const preview: MarketplacePreview = {
         action: plan.action,
+        isolated: sandboxAvailable,
         pluginId: plan.pluginId,
         previewUrl: null,
         resolvedCommit: plan.resolvedCommit,
@@ -1166,7 +1170,7 @@ export class PluginMarketplaceManager {
         dshHome: candidateHome,
         pluginId: plan.pluginId,
         sandboxRoot: root,
-        sandboxed: !confirmations.includes('accept-unsandboxed-build'),
+        sandboxed: sandboxAvailable,
         transactionId,
       })
       if (started.url !== undefined) {
@@ -1175,7 +1179,9 @@ export class PluginMarketplaceManager {
           preview: { ...preview, previewUrl: started.url },
         }
       }
-      this.#lastAction = `Isolated ${plan.action} preview is ready for ${plan.pluginId}.`
+      this.#lastAction = sandboxAvailable
+        ? `Isolated ${plan.action} preview is ready for ${plan.pluginId}.`
+        : `${plan.action} preview is ready for ${plan.pluginId} without process isolation.`
     } catch (error) {
       this.#active = null
       await this.#options.runtime.stopPreview().catch(() => {})
@@ -1189,12 +1195,14 @@ export class PluginMarketplaceManager {
     candidateProfile: string,
     sandboxRoot: string,
     installed: MarketplaceInstalledPlugin,
+    sandboxed: boolean,
   ): Promise<void> {
     if (installed.packageName === null) throw new Error('installed bundle is missing its package name')
     await this.#options.platform.runDsh({
       args: ['plugin', '--profile', this.#options.profile, 'remove', installed.packageName],
       dshHome: candidateHome,
       sandboxRoot,
+      sandboxed,
     })
     const sources = join(candidateProfile, MANAGED_DIRECTORY, 'sources')
     if (!existsSync(sources)) return

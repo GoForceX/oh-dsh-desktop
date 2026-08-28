@@ -32,7 +32,7 @@ import {
 } from '../plugins/plugin-marketplace/src/host/agent-gateway.ts'
 import {
   findGitHubCli,
-  previewSandboxPolicy,
+  previewRuntimeLauncher,
   ProductionMarketplacePlatform,
   withGitHubCredentials,
 } from '../plugins/plugin-marketplace/src/host/platform.ts'
@@ -263,21 +263,12 @@ function previewRuntimeOptions(input: {
   if (!existsSync(paths.nodeBinary)) throw new Error(`packaged Node runtime is missing: ${paths.nodeBinary}`)
   if (!existsSync(paths.cliEntry)) throw new Error(`packaged DSH CLI is missing: ${paths.cliEntry}`)
   const preview = { pluginId: input.pluginId, transactionId: input.transactionId }
-  const sandbox = '/usr/bin/sandbox-exec'
-  const launcher = process.platform === 'darwin' && existsSync(sandbox)
-    ? { args: ['-p', previewSandboxPolicy(input.sandboxRoot)], command: sandbox }
-    : process.platform === 'linux'
-      ? (() => {
-        const landlock = resolveLandlockLauncher(paths.runtimeRoot)
-        return landlock === undefined ? undefined : {
-          args: ['--ro', '/', '--rw', input.sandboxRoot, '--rw', '/dev/null', '--'],
-          command: landlock,
-        }
-      })()
-      : undefined
-  if (input.sandboxed && launcher === undefined) {
-    throw new Error(`scripted marketplace previews require a write-restricted process sandbox, which is unavailable on ${process.platform}`)
-  }
+  const launcher = input.sandboxed
+    ? previewRuntimeLauncher({
+      root: input.sandboxRoot,
+      sandbox: resolveLandlockLauncher(paths.runtimeRoot),
+    })
+    : undefined
   return {
     args: ['--profile', DESKTOP_PROFILE],
     cliEntry: paths.cliEntry,
@@ -290,7 +281,7 @@ function previewRuntimeOptions(input: {
       }),
       TMPDIR: temporary,
     },
-    ...(input.sandboxed && launcher !== undefined ? { launcher } : {}),
+    ...(launcher === undefined ? {} : { launcher }),
     nodeBinary: paths.nodeBinary,
     onLog: (stream, line) => { appendLog(stream, `[preview:${input.pluginId}] ${line}`) },
     readyTimeoutMs: 90_000,
