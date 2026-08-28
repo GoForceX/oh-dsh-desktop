@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-28-floating-chrome-clears-session-top-bar.md
-2026-08-28-floating-chrome-clears-session-top-bar.md: 910ef5b272d17cea994113a5c17bd376cce3e3cc
-2026-08-28-floating-chrome-clears-session-top-bar.zh.md: 816024e3c349e581803348020b5d3e1d811ab554
+2026-08-28-floating-chrome-clears-session-top-bar.md: 6bda396537625db217dc83d7738e27d2129b5ae0
+2026-08-28-floating-chrome-clears-session-top-bar.zh.md: b7f93791cc63a18572e436f8316519e951a75113

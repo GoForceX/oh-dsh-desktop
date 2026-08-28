@@ -30,8 +30,9 @@ from there:
 The side tools panel publishes a third fact the same way —
 `--oh-dsh-workspace-panel-inset`, the panel's width plus its distance from the
 right edge, `0px` while it is closed — and marks
-`data-oh-dsh-side-panel-maximized` when it is maximized. The toolbar's `right`
-is then
+`data-oh-dsh-side-panel-maximized` when it is maximized. The toolbar **owns the
+corner**; its `right` only steps aside for whatever squeezes the conversation
+column:
 
 ```css
 min(
@@ -40,7 +41,6 @@ min(
     calc(
       8px
       + var(--oh-dsh-details-width, 0px)
-      + var(--oh-dsh-session-inset, 0px)
       + var(--oh-dsh-workspace-panel-inset, 0px)
     )
   ),
@@ -48,38 +48,42 @@ min(
 )
 ```
 
-The insets **add up**, because the side panel squeezes the conversation column
-rather than covering it: `Session log` travels left by exactly the panel's
-width, so clearing the panel alone lands the toolbar on top of it. The session
-inset is the measured footprint of that control — 111px button plus its 28px
-inset — swapped in from `0px` by the `data-oh-dsh-session-active` rule, and one
-8px gap is added once for whatever the toolbar yields to. `min()` caps the
-result so a stacked layout cannot push the toolbar across the session list.
+The session top bar's utilities — the `Session log` control — are the ones that
+move: on framed platforms they stand down by
+`--oh-dsh-toolbar-clearance: 89px`, which is the toolbar's footprint (95px
+body + 14px inset + 8px gap = 117px) minus the top bar's own 28px right
+padding, so the button ends up visually 8px clear of the toolbar. The utilities
+are reached through the stable slot contract —
+`[data-slot='conversation.session.header'] :has(> [data-slot='conversation.session.header.utilities'])`
+— never through the hashed CSS-module classes around them, and only while a
+session is active and the side panel is not maximized.
 
 Vertical placement is part of the same contract: while a session is active the
 toolbar sits at `top: 11px` with 28px buttons, matching the `Session log`
 button's height and center line instead of hovering half a row above it.
 
-A maximized side panel owns the top row end to end — `Session log` is squeezed
-to the far left and no horizontal inset can clear it — so the toolbar drops to
-the bottom-right corner instead of hanging in the middle of the panel. It stays
-visible and clickable, because the panel header carries back, close-tab, and
-close controls but no restore control of its own.
+A maximized side panel owns the top row end to end, so the toolbar drops to the
+bottom-right corner instead of hanging in the middle of the panel, and the
+utilities' clearance is lifted — nothing sits in that corner anymore. The
+toolbar stays visible and clickable, because the panel header carries back,
+close-tab, and close controls but no restore control of its own.
 
 The pinned-summary panel takes the details-width term only; it already sits
 below the top bar, and it is mutually exclusive with the side tools panel.
-macOS and Windows keep their own `right` overrides, because their title bar row
-makes the conflict impossible and moving them would only drift the toolbar away
-from the corner.
+macOS and Windows keep their own `right` overrides and skip the clearance:
+their title bar row makes the collision impossible, and moving anything there
+would only drift the toolbar off the corner.
 
 Measured on Linux at a 1282px viewport. With a session open the toolbar spans
-1040..1135 and `Session log` starts at 1143 — an 8px gap, both centred on
-y=28, with no interactive element anywhere under the toolbar. Opening the side
-tools panel (480px wide) moves `Session log` to 663 and the toolbar to 560..655
-— the same 8px gap, the same centre line. Maximizing the panel moves the toolbar
-to the bottom-right corner at 1173..1268 / y=765, still visible and clickable.
-Opening the details column moves the toolbar and the control it yields to by the
-same amount, so the gap is constant.
+1173..1268 (the corner) and `Session log` sits at 1054..1165 — an 8px gap,
+both centred on y=28, with no interactive element anywhere under the toolbar.
+Opening the side tools panel (480px wide) moves both left together: `Session
+log` to 574..685, the toolbar to 699..794 — a 14px gap (the toolbar's inset
+relative to the squeezed column differs by 6px between the two states; both
+read as ordinary control spacing). Maximizing the panel docks the toolbar at
+1173..1268 / y=765 and restores `Session log` to its natural corner position.
+Opening the details column shifts the toolbar and the utilities together, so
+the gap stays constant.
 
 ## Alternatives considered
 
@@ -114,6 +118,13 @@ original defect: the panel is then as wide as the viewport, `Session log` is
 squeezed to x=96, and the `min()` cap parks the toolbar at 359..460 — dead
 centre of the panel, which is exactly what the first report described.
 
+**Move the toolbar and let `Session log` keep the corner.** Built and shipped
+in the first iteration, then reversed on feedback: the corner reads as the
+toolbar's natural home, and the swapped layout keeps the two controls on one
+line with a stable gap. The current decision moves the utilities instead, which
+also keeps the toolbar's position independent of the upstream control's exact
+width.
+
 **Hide the toolbar while the panel is maximized.** Rejected because the panel
 header exposes back, close-tab, and close but no restore control, and the
 maximized state survives closing the panel: hiding the only toggle would strand
@@ -127,13 +138,16 @@ maximize, and viewport changes.
 ## Consequences
 
 Three small contracts now connect the frame and the side tools panel to the
-floating chrome: two CSS custom properties, one root attribute, and the
-`max()` / `min()` composition that keeps them from stacking. The toolbar still
-owns its placement and reads no layout state of its own, so `sidebar` stays
-decoupled from the frame's store and from the panel's width. The 147px inset is
-an agreement with the upstream top bar's layout: if that control's width
-changes, the variable is the single place to update. The panel's footprint is
-measured at runtime, so resize and maximize need no extra plumbing. Tests in
-`tests/desktop-titlebar.test.ts` pin the published width, the session-active
-attribute, the panel inset, and the composed `right` rule, so a silent
-regression fails the suite instead of the user's next click.
+floating chrome: two CSS custom properties, two root attributes, and the
+`max()` / `min()` composition on the toolbar plus the clearance rule on the
+utilities slot. The toolbar owns its corner and reads no layout state of its
+own, so `sidebar` stays decoupled from the frame's store and the panel's width.
+The 89px clearance is an agreement with the upstream top bar's layout — 117px
+of toolbar footprint minus 28px of the top bar's own padding — with the same
+fragility the earlier 139px inset had: if the upstream geometry changes, the
+variable is the single place to update, and the slot-based selector survives
+rebuilds. The panel's footprint is measured at runtime, so resize and maximize
+need no extra plumbing. Tests in `tests/desktop-titlebar.test.ts` pin the
+published values, the clearance rule, the vertical alignment, and the composed
+`right` rule, so a silent regression fails the suite instead of the user's next
+click.
