@@ -50,10 +50,14 @@ export interface BundleBuildInput {
   checkout: string
   sandboxRoot: string
   scripts: string[]
+  /** Explicitly opt out of process confinement; never the default. */
+  sandboxed?: boolean
 }
 
 /** Privileged operations consumed by the marketplace transaction module. */
 export interface MarketplacePlatform {
+  /** Whether lifecycle scripts can run under a write-restricted launcher. */
+  readonly scriptSandboxAvailable?: boolean
   authStatus(): Promise<MarketplaceAuthResult>
   buildBundle(input: BundleBuildInput): Promise<void>
   cloneRepository(repository: string, commit: string, target: string): Promise<void>
@@ -81,6 +85,8 @@ export interface ProductionMarketplacePlatformOptions {
   nodeBinary: string
   now?: () => number
   pnpmEntry: string
+  /** Packaged Linux launcher; absent means scripted previews fail closed. */
+  sandboxLauncher?: string | undefined
   onLog?: (message: string) => void
 }
 
@@ -91,8 +97,11 @@ interface CommandOptions {
 }
 
 const MAX_OUTPUT_BYTES = 4 * 1024 * 1024
+
 export const MARKETPLACE_CATALOG_CACHE_TTL_MS = 2 * 60 * 60 * 1000
+
 export const MARKETPLACE_REPOSITORY_STATS_CACHE_TTL_MS = 6 * 60 * 60 * 1000
+
 const CATALOG_CACHE_VERSION = 1
 
 interface CatalogCache {
@@ -389,44 +398,69 @@ export function previewSandboxPolicy(root: string): string {
   ].join('')
 }
 
-interface PreviewScriptCommandInput {
-  nodeArguments: string[]
-  nodeBinary: string
+export interface PreviewRuntimeLauncherInput {
   pathExists?: (path: string) => boolean
   platform?: NodeJS.Platform
   root: string
-  sandbox?: string
+  sandbox?: string | undefined
+}
+
+/** Seatbelt on macOS, Landlock on Linux, otherwise fail closed. */
+export function previewRuntimeLauncher(
+  input: PreviewRuntimeLauncherInput,
+): { args: string[]; command: string } {
+  const platform = input.platform ?? process.platform
+  const pathExists = input.pathExists ?? existsSync
+  const sandbox = input.sandbox
+    ?? (platform === 'darwin' ? '/usr/bin/sandbox-exec' : undefined)
+  if (platform === 'darwin') {
+    if (sandbox === undefined || !pathExists(sandbox)) {
+      throw new Error(
+        `scripted marketplace previews require a write-restricted process sandbox, which is unavailable on ${platform}`,
+      )
+    }
+    return {
+      args: ['-p', previewSandboxPolicy(input.root)],
+      command: sandbox,
+    }
+  }
+  if (platform === 'linux' && sandbox !== undefined && pathExists(sandbox)) {
+    return {
+      command: sandbox,
+      args: ['--ro', '/', '--rw', input.root, '--rw', '/dev/null', '--'],
+    }
+  }
+  throw new Error(
+    `scripted marketplace previews require a write-restricted process sandbox, which is unavailable on ${platform}`,
+  )
+}
+
+interface PreviewScriptCommandInput extends PreviewRuntimeLauncherInput {
+  nodeArguments: string[]
+  nodeBinary: string
 }
 
 /** Select a write-restricted launcher or reject the scripted preview. */
 export function previewScriptCommand(
   input: PreviewScriptCommandInput,
 ): { args: string[]; command: string } {
-  const platform = input.platform ?? process.platform
-  const sandbox = input.sandbox ?? '/usr/bin/sandbox-exec'
-  const pathExists = input.pathExists ?? existsSync
-  if (platform !== 'darwin' || !pathExists(sandbox)) {
-    throw new Error(
-      `scripted marketplace previews require a write-restricted process sandbox, which is unavailable on ${platform}`,
-    )
-  }
+  const launcher = previewRuntimeLauncher(input)
   return {
-    args: [
-      '-p',
-      previewSandboxPolicy(input.root),
-      input.nodeBinary,
-      ...input.nodeArguments,
-    ],
-    command: sandbox,
+    args: [...launcher.args, input.nodeBinary, ...input.nodeArguments],
+    command: launcher.command,
   }
 }
 
 export class ProductionMarketplacePlatform implements MarketplacePlatform {
+  readonly scriptSandboxAvailable: boolean
   readonly #ghPath: string | null
   readonly #options: ProductionMarketplacePlatformOptions
 
   constructor(options: ProductionMarketplacePlatformOptions) {
     this.#options = options
+    this.scriptSandboxAvailable = process.platform === 'darwin'
+      ? existsSync('/usr/bin/sandbox-exec')
+      : process.platform === 'linux' && options.sandboxLauncher !== undefined
     this.#ghPath = findGitHubCli(options.env)
   }
 
@@ -498,11 +532,14 @@ export class ProductionMarketplacePlatform implements MarketplacePlatform {
         })),
     ]
     for (const command of commands) {
-      const launcher = previewScriptCommand({
-        nodeArguments: command.args,
-        nodeBinary: this.#options.nodeBinary,
-        root: input.sandboxRoot,
-      })
+      const launcher = input.sandboxed === false
+        ? { command: this.#options.nodeBinary, args: command.args }
+        : previewScriptCommand({
+          nodeArguments: command.args,
+          nodeBinary: this.#options.nodeBinary,
+          root: input.sandboxRoot,
+          sandbox: this.#options.sandboxLauncher,
+        })
       this.#options.onLog?.(`marketplace build: ${command.label}`)
       const result = await runCommand(launcher.command, launcher.args, {
         cwd: input.checkout,
@@ -726,13 +763,16 @@ export class ProductionMarketplacePlatform implements MarketplacePlatform {
       DSH_HOME: input.dshHome,
     }, this.#ghPath)
     const nodeArguments = [this.#options.cliEntry, ...input.args]
-    const sandbox = '/usr/bin/sandbox-exec'
-    const command = sandboxed && process.platform === 'darwin' && existsSync(sandbox)
-      ? sandbox
-      : this.#options.nodeBinary
-    const args = command === sandbox
-      ? ['-p', previewSandboxPolicy(input.sandboxRoot), this.#options.nodeBinary, ...nodeArguments]
-      : nodeArguments
+    const launcher = sandboxed
+      ? previewScriptCommand({
+        nodeArguments,
+        nodeBinary: this.#options.nodeBinary,
+        root: input.sandboxRoot,
+        sandbox: this.#options.sandboxLauncher,
+      })
+      : { command: this.#options.nodeBinary, args: nodeArguments }
+    const command = launcher.command
+    const args = launcher.args
     this.#options.onLog?.(`marketplace command: dsh ${input.args.join(' ')}`)
     const result = await runCommand(command, args, {
       ...(this.#options.cwd === undefined ? {} : { cwd: this.#options.cwd }),
@@ -753,3 +793,4 @@ export class ProductionMarketplacePlatform implements MarketplacePlatform {
 export function defaultPreviewTemporaryRoot(): string {
   return join(tmpdir(), 'oh-dsh-plugin-preview')
 }
+// weave: run 'weave explain plugins/plugin-marketplace/src/host/platform.ts' for per-hunk detail, 'weave check' to verify your resolution

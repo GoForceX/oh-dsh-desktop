@@ -27,7 +27,7 @@ test('Make surface targets select isolated staging profiles', () => {
 })
 
 test('surface staging keeps Desktop isolated and ships Liangshen as a Web/Desktop plugin', () => {
-  const script = readFileSync(join(root, 'scripts', 'stage-dsh.mjs'), 'utf8')
+  const script = readFileSync(join(root, 'scripts', 'stage-runtime-lib.mjs'), 'utf8')
   const desktopStart = script.indexOf("desktop: new Set([")
   const webStart = script.indexOf("web: new Set([")
   assert.ok(desktopStart >= 0 && webStart > desktopStart)

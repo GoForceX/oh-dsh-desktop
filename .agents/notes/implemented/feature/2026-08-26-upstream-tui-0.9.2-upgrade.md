@@ -28,9 +28,9 @@ subscription LLM route, `/reload` and `/restart`, and fixes a pnpm ≥ 11
   `./package.json` and the main entry from `require.resolve`
   (`@earendil-works/pi-ai` is the first such dependency).
 - The bundled `dsh-auth` is staged as the nested copy the renderer's
-  `link:./dsh-auth` resolution produces; Nix consumes the published
-  `@deepseek-harness-tui/dsh-auth@0.1.0` tarball through extra-deps, the
-  same published-artifact pattern as the renderer.
+  `link:./dsh-auth` resolution produces; Nix mounts the published
+  `@deepseek-harness-tui/dsh-auth@0.1.0` tarball into the repository-shaped
+  staging root, the same published-artifact pattern as the renderer.
 - The root pnpm workspace includes the nested `dsh-auth` package and records
   its importer in the shared lockfile. pnpm deploy rewrites the renderer's
   `link:./dsh-auth` as a file dependency; explicit workspace membership gives

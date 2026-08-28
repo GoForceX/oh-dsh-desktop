@@ -24,8 +24,8 @@ Status: implemented
   `require.resolve` 隐藏时（`@earendil-works/pi-ai` 是首个此类依赖），改为从
   发起解析的包沿 node_modules 链向上查找。
 - 内置 `dsh-auth` 按 renderer `link:./dsh-auth` 解析产生的嵌套副本暂存；Nix
-  通过 extra-deps 消费已发布的 `@deepseek-harness-tui/dsh-auth@0.1.0` 包，
-  与 renderer 使用相同的已发布产物模式。
+  把已发布的 `@deepseek-harness-tui/dsh-auth@0.1.0` 包挂载进仓库形状的
+  staging root，与 renderer 使用相同的已发布产物模式。
 - 根 pnpm workspace 纳入嵌套 `dsh-auth` 包，并在 shared lockfile 中记录其
   importer。pnpm deploy 会把 renderer 的 `link:./dsh-auth` 改写成 file 依赖；
   显式 workspace 成员关系在保留固定子模块源码的同时，为该依赖提供锁定归属。

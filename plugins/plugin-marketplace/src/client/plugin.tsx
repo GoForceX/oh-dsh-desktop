@@ -163,6 +163,7 @@ declare global {
 export const inject = ['locale', 'sessions', 'slots']
 
 const OPEN_KEY = 'oh-dsh-desktop.plugin-marketplace.open'
+
 const FOOTER_STACK_ATTRIBUTE = 'data-oh-dsh-marketplace-footer-stack'
 
 function readOpen(): boolean {
@@ -511,6 +512,7 @@ function confirmationLabel(
   t: Translate<MarketplaceMessage>,
 ): string {
   if (confirmation === 'allow-build-scripts') return t('allow-scripts')
+  if (confirmation === 'accept-unsandboxed-build') return t('accept-unsandboxed-build')
   if (confirmation === 'accept-high-risk') return t('accept-high-risk')
   return t('accept-source-change')
 }
@@ -607,7 +609,9 @@ function PluginDetail({
   const hasScripts = plan !== null && Object.keys(plan.buildScripts).length > 0
   const readyToPreview = plan !== null
     && plan.requirements.every(requirement => confirmations.includes(requirement))
-  useEffect(() => { setConfirmations([]) }, [plugin.id, plan?.resolvedCommit])
+  useEffect(() => {
+    setConfirmations([])
+  }, [plugin.id, plan?.resolvedCommit, plan?.manifestHash, plan?.action])
   const setConfirmed = (
     confirmation: MarketplaceConfirmation,
     confirmed: boolean,
@@ -804,6 +808,11 @@ function localizedHostMessage(
     const action = t(`action.${match[1] as 'install' | 'update' | 'enable' | 'disable' | 'uninstall'}`)
     return t('notice.preview-ready', { action, plugin: match[2] })
   }
+  match = /^(install|update|enable|disable|uninstall) preview is ready for (.+) without process isolation\.$/.exec(message)
+  if (match !== null) {
+    const action = t(`action.${match[1] as 'install' | 'update' | 'enable' | 'disable' | 'uninstall'}`)
+    return t('notice.preview-ready-unisolated', { action, plugin: match[2] })
+  }
   match = /^Discarded the (.+) preview without changing the profile\.$/.exec(message)
   if (match !== null) return t('notice.discarded', { plugin: match[1] })
   match = /^Applied (.+); the previous profile remains available for Undo\.$/.exec(message)
@@ -971,7 +980,7 @@ function MarketplaceSurface({ bridge, locale, translate, view }: {
           </header>
           {snapshot?.preview !== null && snapshot?.preview !== undefined && (
             <div className="oh-marketplace-preview-banner">
-              <strong>{t('preview.running', { plugin: snapshot.preview.pluginId })}</strong>
+              <strong>{t(snapshot.preview.isolated === false ? 'preview.running-unisolated' : 'preview.running', { plugin: snapshot.preview.pluginId })}</strong>
               <button className="oh-marketplace-button" disabled={pending} onClick={() => { void run({ type: 'discard' }) }} type="button">
                 {t('discard')}
               </button>

@@ -30,9 +30,10 @@ deployment 没有这份 composition。
   anchor；DSH 或 dsh-TUI 布局变化会让打包失败并要求复核。
 - 以只读 viewer 启动（`OH_DSH_READ_ONLY=1`）时跳过安装：viewer 与活跃
   surface 共享 data root，此时安装会覆盖那个 surface 拥有的 preset 状态。
-- 在 Nix 的 `full` 与 `web` 装配中通过 `nix/register-plugins.py` 注册该
-  plugin，并从 pinned TUI release 把 preset 复制到 `dist/` 旁；Nix 的 TUI
-  闭包继续使用上游 preset。
+- 在 Nix 的 `full` 与 `web` 装配中通过共享运行时组装器
+  （`scripts/stage-runtime-lib.mjs` 的 `installDesktopPackages`，与发布管线
+  同一实现）注册该 plugin，并从 pinned TUI release 把 preset 复制到
+  `dist/` 旁；Nix 的 TUI 闭包继续使用上游 preset。
 - TUI 不挂载这个 plugin；pinned dsh-TUI renderer 已经自带并暴露梁神模式。
 - preset 源码继续放在 pinned dsh-TUI checkout 中，使 tool-bootstrap、压缩和子
   Agent 行为随其上游 owner 一起升级。
@@ -68,7 +69,9 @@ composition。
 - 按交互端的本地 staging 只在 Web/Desktop 包含该 plugin；TUI 不会收到重复的
   Liangshen runtime package。
 - Nix 的 Desktop/Web 与 staged（非 Nix）部署以相同方式解析 plugin package 及
-  其 preset，由 `tests/nix-register-plugins.test.ts` 守护。
+  其 preset，由 `tests/stage-runtime-lib.test.ts` 守护。
+- Nix 装配机制已移入共享运行时组装器（见
+  2026-08-27-nix-packaging-shares-stage-dsh-assembly）；本笔记保留表面归属决策。
 - `tests/liangshen.test.ts`、`tests/tui.test.ts` 以及 Desktop/Web 冒烟测试固定了
   marker 派生的所有权字段、canonical 元数据保护与实际提供的 client bundle。
 - 每次升级 DSH 或 dsh-TUI 都需要重新验证 presentation anchor、preset

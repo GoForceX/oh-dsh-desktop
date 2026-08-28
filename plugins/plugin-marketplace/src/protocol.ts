@@ -1,11 +1,17 @@
 export const MARKETPLACE_CATALOG_REPOSITORY = 'whyihaveyou/dsh-suite'
+
 export const MARKETPLACE_CATALOG_PATH = 'data/plugins.json'
 
 export type MarketplaceAuthStatus = 'ready' | 'missing-cli' | 'signed-out' | 'error'
+
 export type MarketplaceMechanism = 'bundle' | 'repository' | 'discover' | 'unsupported'
+
 export type MarketplaceInstallMechanism = 'bundle' | 'repository'
+
 export type MarketplaceAction = 'install' | 'update' | 'enable' | 'disable' | 'uninstall'
+
 export type MarketplaceRuntimeRisk = 'profile-bundle' | 'trusted-host' | 'guided'
+
 export type MarketplaceSurfaceKind = 'desktop' | 'web' | 'tui'
 
 /** Where a catalog entry is expected to take effect after installation. */
@@ -15,16 +21,22 @@ export interface MarketplaceSurfaceSupport {
   web: boolean
   tui: boolean
 }
+
 export type MarketplaceTrust = 'organization' | 'community' | 'untrusted'
+
 export type MarketplaceRiskLevel = 'low' | 'elevated' | 'high' | 'blocked'
+
 export type MarketplaceRiskReason =
   | 'install-scripts'
   | 'trusted-host-code'
   | 'source-change'
   | 'protected-plugin'
+
 export type MarketplaceSourceReview = 'first-use' | 'matched' | 'changed'
+
 export type MarketplaceConfirmation =
   | 'allow-build-scripts'
+  | 'accept-unsandboxed-build'
   | 'accept-high-risk'
   | 'accept-source-change'
 
@@ -150,6 +162,7 @@ export interface MarketplacePlan {
 
 export interface MarketplacePreview {
   action: MarketplaceAction
+  isolated: boolean
   pluginId: string
   previewUrl: string | null
   resolvedCommit: string
@@ -198,8 +211,6 @@ export type MarketplaceCommand =
   | {
     type: 'preview'
     confirmations?: MarketplaceConfirmation[]
-    /** @deprecated Accepted while older renderers reconnect during an upgrade. */
-    allowBuildScripts?: boolean
   }
   | { type: 'discard' }
   | { type: 'apply' }
@@ -250,6 +261,7 @@ export function parseMarketplaceCommand(value: unknown): MarketplaceCommand {
   if (value.type === 'preview') {
     const valid = new Set<MarketplaceConfirmation>([
       'allow-build-scripts',
+      'accept-unsandboxed-build',
       'accept-high-risk',
       'accept-source-change',
     ])
@@ -259,15 +271,9 @@ export function parseMarketplaceCommand(value: unknown): MarketplaceCommand {
           || !valid.has(entry as MarketplaceConfirmation)))) {
       throw new Error('invalid marketplace preview confirmations')
     }
-    if (value.allowBuildScripts !== undefined
-      && typeof value.allowBuildScripts !== 'boolean') {
-      throw new Error('invalid marketplace preview compatibility flag')
-    }
     const confirmations = Array.isArray(value.confirmations)
       ? value.confirmations as MarketplaceConfirmation[]
-      : value.allowBuildScripts === true
-        ? ['allow-build-scripts'] satisfies MarketplaceConfirmation[]
-        : [] satisfies MarketplaceConfirmation[]
+      : [] satisfies MarketplaceConfirmation[]
     return { type: 'preview', confirmations }
   }
   throw new Error(`unsupported marketplace command: ${value.type}`)

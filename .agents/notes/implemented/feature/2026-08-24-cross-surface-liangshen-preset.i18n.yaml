@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-24-cross-surface-liangshen-preset.md
-2026-08-24-cross-surface-liangshen-preset.md: bb38bd35fcf34dafbd02cad6c1368f0dafd347b0
-2026-08-24-cross-surface-liangshen-preset.zh.md: 0159f8be3073c56f9d065bcb2caf9d085e9143c0
+2026-08-24-cross-surface-liangshen-preset.md: 5301d9aca3e62740552be0326f98c8ee6db52662
+2026-08-24-cross-surface-liangshen-preset.zh.md: 77baf1955ff1dc3c93e9ec111d0d8f56cd07c8bb
