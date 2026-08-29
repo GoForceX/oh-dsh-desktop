@@ -133,9 +133,9 @@ ohdsh desktop
 | Web-only | **Oh-DSH Web**、Node runtime 和内置 Web 插件，不含 Electron | 浏览器、服务器或轻量安装 |
 | TUI-only | **Oh-DSH TUI**、Node runtime 和终端插件，不含 Electron | SSH 与纯终端环境 |
 
-- **macOS：**打开 DMG，将 **Oh-DSH Desktop** 拖入 Applications。
-- **Windows：**运行安装包，或解压便携版后启动。
-- **Linux：**直接运行 AppImage，或使用 `apt` 安装 deb。
+- **macOS**：打开 DMG，将 **Oh-DSH Desktop** 拖入 Applications。
+- **Windows**：运行安装包，或解压便携版后启动。
+- **Linux**：直接运行 AppImage，或使用 `apt` 安装 deb。
 
 安装脚本是推荐入口；Release 资产适合需要手动选择包或离线分发的场景。
 
