@@ -240,8 +240,20 @@ test('TUI upstream adapter removes legacy terminal branding and scopes storage',
     const messages = readFileSync(join(lib, 'i18n.js'), 'utf8')
     assert.match(messages, /~\/\.ohdsh\/tui/)
     assert.doesNotMatch(messages, /dsh-tui|~\/\.dsh-tui/)
+    assert.match(messages, /Harness credentials service/)
+    assert.match(messages, /密钥由 Harness 凭据服务管理/)
+    assert.match(messages, /\$DSH_HOME\/\.credentials\.yaml/)
+    assert.match(messages, /already in the process environment, write skipped/)
+    assert.match(messages, /进程环境已提供同名变量，跳过写入/)
+    assert.doesNotMatch(messages, /~\/\.dsh\/\.credentials\.yaml|密钥将写入/)
     assert.match(messages, /Liangshen mode/)
     assert.match(messages, /preset-liangshen-description/)
+    const providerWizard = readFileSync(
+      join(lib, 'dsh-adapter', 'providerWizard.js'),
+      'utf8',
+    )
+    assert.match(providerWizard, /\$DSH_HOME\/\.credentials\.yaml/)
+    assert.doesNotMatch(providerWizard, /~\/\.dsh\/\.credentials\.yaml/)
     const channel = readFileSync(join(lib, 'dsh-adapter', 'channel.js'), 'utf8')
     assert.match(channel, /oh-dsh-tui-export-/)
     assert.match(channel, /isOhDshLiangshen/)
